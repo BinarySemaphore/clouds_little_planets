@@ -3,7 +3,7 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
 
 * [Features](#features)
   * [Screenshots](#screenshots)
-* [Install](#insall)
+* [Install](#install)
   * [Godot AssetLib](#godot-assetlib)
   * [Direct (from GitHub)](#direct-from-github)
 * [Guide](#guide)
@@ -20,17 +20,16 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
 - Wind (WIP)
 
 ### Screenshots
-| | | |
+| <img src="github/screenshots/20260724_180749.png"> | <img src="github/screenshots/20260724_180806.png"> | <img src="github/screenshots/20260724_180819.png"> |
 | --- | --- | --- |
-| <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_180749.png"> | <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_180806.png"> | <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_180819.png"> |
-| <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_180901.png"> | <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_180925.png"> | <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_180953.png"> |
-| <img src="/BinarySemaphore/clouds_little_planets/blob/main/github/screenshots/20260724_181045.png"> |
+| <img src="github/screenshots/20260724_180901.png"> | <img src="github/screenshots/20260724_180925.png"> | <img src="github/screenshots/20260724_180953.png"> |
+| <img src="github/screenshots/20260724_181045.png"> |
 
 ## Install
 ### Godot AssetLib
 _Release Pending..._
 ### Direct (from GitHub)
-1) Go to [Releases](/BinarySemaphore/clouds_little_planets/releases)
+1) Go to [Releases](https://github.com/BinarySemaphore/clouds_little_planets/releases)
 1) Download the latest `*.zip`
 1) In Godot, ensure your project has `addons` folder
 1) click on `AssetLib` at the top
