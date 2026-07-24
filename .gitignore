@@ -15,3 +15,21 @@ export_credentials.cfg
 .mono/
 data_*/
 mono_crash.*.json
+
+# Linux
+.*swp
+
+# Python
+__pycache__/
+*.pyc
+
+# Blender
+*.blend1
+
+# VSCode
+.vscode/
+
+# Project Specific
+build/*
+!build/.gdignore
+!build/settings.cfg
