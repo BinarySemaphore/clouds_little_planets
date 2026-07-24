@@ -1,0 +1,11 @@
+[gd_resource type="NoiseTexture3D" format=3 uid="uid://d2j8xtettj86a"]
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_clmbe"]
+seed = 159
+frequency = 0.0605
+fractal_weighted_strength = 0.62
+
+[resource]
+noise = SubResource("FastNoiseLite_clmbe")
+seamless = true
+seamless_blend_skirt = 0.405

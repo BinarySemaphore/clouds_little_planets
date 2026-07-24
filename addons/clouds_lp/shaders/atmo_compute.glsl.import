@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://k8gfd23cyxdt"
+path="res://.godot/imported/atmo_compute.glsl-e70d85e0618a9beab9948963e19870a0.res"
+
+[deps]
+
+source_file="res://addons/clouds_lp/shaders/atmo_compute.glsl"
+dest_files=["res://.godot/imported/atmo_compute.glsl-e70d85e0618a9beab9948963e19870a0.res"]
+
+[params]
+

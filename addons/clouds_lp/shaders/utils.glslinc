@@ -1,0 +1,193 @@
+const float PI = 3.14159265359;
+const float TAU = 6.28318530718;
+const float PI_HALF = PI * 0.5;
+
+uint seed;
+
+/* Provide seed from vec2 p, to be used with rand().
+ * Note: should set a varying seed uint.
+*/
+uint rand_seed_2d(vec2 p) {
+	uvec2 q = uvec2(ivec2(p));
+	return q.x + 1973u * q.y + 9277u;
+}
+
+/* Random number between 0.0 and 1.0.
+ * Using PCG hash method.
+ * Note: seed with rand_seed_2d() given vec2 first.
+*/
+float rand() {
+	uint state = seed * 747796405u + 2891336453u;
+	uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+	uint hashval = (word >> 22u) ^ word;
+
+	return float(hashval) / 4294967295.0;
+}
+
+float rand_near_one(float offset) {
+	if (offset <= 0.0) return 1.0;
+	return (rand() * offset) + (1.0 - offset);
+}
+
+/* Alt random with vec2 as specific seed
+*/
+float rand(vec2 s) {
+	return fract(sin(dot(s, vec2(11.097, 47.0654))) * 13196.7298);
+}
+
+vec2 get_screen_uv(ivec2 pixel, vec2 size) {
+	return (vec2(pixel) + 0.5) / size;
+}
+
+vec4 get_ndc(vec2 screen_uv, float depth) {
+	return vec4(screen_uv * 2.0 - 1.0, depth, 1.0);
+}
+
+float get_depth_linear(mat4 inv_proj, vec4 ndc) {
+	vec4 view = inv_proj * ndc;
+	view.xyz /= view.w;
+	return -view.z;
+}
+
+vec3 get_cam_world_pos(mat4 inv_view) {
+	return inv_view[3].xyz;
+}
+
+vec3 get_cam_world_pos(mat3x4 inv_view) {
+	return vec3(
+		inv_view[0].w,
+		inv_view[1].w,
+		inv_view[2].w
+	);
+}
+
+vec3 get_cam_forward(mat3x4 inv_view) {
+	return -vec3(
+		inv_view[0].z,
+		inv_view[1].z,
+		inv_view[2].z
+	);
+}
+
+/* Return a unit direction in world-space from camera through a pixel
+ * given by screen_uv.
+*/
+vec3 ray_screen(mat4 inv_view, mat4 inv_proj, vec2 screen_uv) {
+	// Screen (as NDC), to clip space, to view space
+	vec4 view = inv_proj * get_ndc(screen_uv, 1.0);
+	view.xyz /= view.w;
+	
+	// View to world space
+	vec3 ray_direction = (inv_view * vec4(view.xyz, 0.0)).xyz;
+	return normalize(ray_direction);
+}
+
+/* Return a unit direction in world-space from camera through a pixel
+ * given by screen_uv.
+*/
+vec3 ray_screen(mat4 inv_view, mat4 inv_proj, vec4 ndc) {
+	vec4 view = inv_proj * ndc;
+	view.xyz /= view.w;
+
+	// View to world space
+	vec3 ray_direction = (inv_view * vec4(view.xyz, 0.0)).xyz;
+	return normalize(ray_direction);
+}
+
+/* Return a unit direction in world-space from camera through a pixel
+ * given by screen_uv.
+*/
+vec3 ray_screen(mat3x4 inv_view, mat4 inv_proj, vec2 screen_uv) {
+	// Screen (as NDC), to clip space, to view space
+	vec4 view = inv_proj * get_ndc(screen_uv, 1.0);
+	view.xyz /= view.w;
+	
+	// View to world space
+	mat3 inv_view_rotation = transpose(mat3(inv_view));
+	vec3 ray_direction = (inv_view_rotation * view.xyz).xyz;
+	return normalize(ray_direction);
+}
+
+/* Return a unit direction in world-space from camera through a pixel
+ * given by screen_uv.
+*/
+vec3 ray_screen(mat3x4 inv_view, mat4 inv_proj, vec4 ndc) {
+	vec4 view = inv_proj * ndc;
+	view.xyz /= view.w;
+
+	// View to world space
+	mat3 inv_view_rotation = transpose(mat3(inv_view));
+	vec3 ray_direction = (inv_view_rotation * view.xyz).xyz;
+	return normalize(ray_direction);
+}
+
+/* Checks if a sphere is fully out of view (including from inside).
+ * View is defined by pos and dir.
+ * Sphere is defined by center and radius.
+*/
+bool sphere_in_view(vec3 pos, vec3 dir, vec3 center, float radius, float dist_limit) {
+	vec3 rel_center = center - pos;
+	float dist_squared = dot(rel_center, rel_center);
+	if (length(rel_center) - radius > dist_limit) return false;
+	return !(dot(dir, rel_center) <= 0.0 && dist_squared >= radius * radius);
+}
+
+/* Line-Sphere intersection (range based | requires precheck sphere_in_view()).
+ * Line defined by pos and dir; Sphere defined by center and radius.
+ * Returns vec2(start, dist) where start is distance from pos along
+ * dir (first entry); dist is distance through sphere (start to exit).
+ * Note: a dist of zero (vec2(x, 0.0)) indicates no intersection.
+*/
+vec2 sphere_intersect_prechecked(vec3 pos, vec3 dir, vec3 center, float radius) {
+	float radius_squared = radius * radius;
+	vec3 rel_center = center - pos;
+	
+	float W = dot(dir, rel_center);
+	float X = dot(rel_center, rel_center);
+	float Y = X - radius_squared;
+	// Early Exit: check out of view and beyond radius (to support inside-start)
+	//if(W <= 0.0 && Y >= 0.0) return vec2(0.0);
+	//float valid = step(0.0, W) + step(0.0, -Y);
+	float Z = W * W - Y;
+	// Early Exit: check no intersection
+	if (Z < 0.0) return vec2(0.0);
+	//valid *= step(0.0, Z);
+	
+	// Note: if no return yet, then at least one intersect is real
+	// Find entry and exit distances (t1 is near, t2 is far)
+	float Z_sqrt = sqrt(Z);
+	// Starting-from-Inside
+	if (Y < 0.0) {
+		return vec2(0.0, W + Z_sqrt);
+	}
+	// Starting-from-Outside
+	// Note: t2 simplified from t2 - t1 => (W + Z_sqrt) - (W - Z_sqrt)
+	return vec2(W - Z_sqrt, 2.0 * Z_sqrt);
+}
+
+vec2 sphere_intersect(vec3 pos, vec3 dir, vec3 center, float radius) {
+	float radius_squared = radius * radius;
+	vec3 rel_center = center - pos;
+	
+	float W = dot(dir, rel_center);
+	float X = dot(rel_center, rel_center);
+	float Y = X - radius_squared;
+	// Early Exit: check out of view and beyond radius (to support inside-start)
+	if(W <= 0.0 && Y >= 0.0) return vec2(0.0);
+	//float valid = step(0.0, W) + step(0.0, -Y);
+	float Z = W * W - Y;
+	// Early Exit: check no intersection
+	if (Z < 0.0) return vec2(0.0);
+	//valid *= step(0.0, Z);
+	
+	// Note: if no return yet, then at least one intersect is real
+	// Find entry and exit distances (t1 is near, t2 is far)
+	float Z_sqrt = sqrt(Z);
+	// Starting-from-Inside
+	if (Y < 0.0) {
+		return vec2(0.0, W + Z_sqrt);
+	}
+	// Starting-from-Outside
+	// Note: t2 simplified from t2 - t1 => (W + Z_sqrt) - (W - Z_sqrt)
+	return vec2(W - Z_sqrt, 2.0 * Z_sqrt);
+}

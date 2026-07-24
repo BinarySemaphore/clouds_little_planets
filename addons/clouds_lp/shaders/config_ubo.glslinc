@@ -1,0 +1,45 @@
+struct CGUBO {
+	vec3 light_pos;
+	float dist_limit;
+
+	vec3 pos;
+	float radius;
+
+	float atmo_alt;
+	
+	// Cloud
+	float cl_beers;
+	float cl_powder;
+	float cl_light_pen;
+	vec2 cl_threshold;
+	float cl_density_scalar;
+	float cl_layer_falloff;
+	vec3 cl_scale;
+	float cl_global_scale;
+	vec3 cl_color;
+	int cl_steps;
+	float cl_step_scalar;
+	float cl_min_step_size;
+	float cl_deband;
+	float cl_deband_scalar;
+	vec3 cl_offset;
+	float cl_wisp;
+	vec2 cl_mask_offset;
+	float cl_light_scatter;
+	float cl_wisp_scale;
+
+	// Atmo
+	vec3 rayleigh_coefs;
+	float light_pen;
+	vec3 mie_coefs;
+	float star_glow;
+	vec3 color_star;
+	float density_falloff;
+	vec3 reserved_2;
+	float refract_bend;
+
+	bool atmo_enable;
+	bool cloud_enable;
+	bool cloud_atmo_light_enable;
+	float reserved_3;
+};

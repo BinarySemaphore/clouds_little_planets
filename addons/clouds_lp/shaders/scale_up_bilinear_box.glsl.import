@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://bxdhxwue5ip2x"
+path="res://.godot/imported/scale_up_bilinear_box.glsl-a49261cb12c1f8b64a427534af40dc91.res"
+
+[deps]
+
+source_file="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl"
+dest_files=["res://.godot/imported/scale_up_bilinear_box.glsl-a49261cb12c1f8b64a427534af40dc91.res"]
+
+[params]
+

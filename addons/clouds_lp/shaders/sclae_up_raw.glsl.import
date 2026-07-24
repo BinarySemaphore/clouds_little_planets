@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://7jttee08kpc0"
+path="res://.godot/imported/sclae_up_raw.glsl-9e9c200cf3cf0407e478571ed4d89a9b.res"
+
+[deps]
+
+source_file="res://addons/clouds_lp/shaders/sclae_up_raw.glsl"
+dest_files=["res://.godot/imported/sclae_up_raw.glsl-9e9c200cf3cf0407e478571ed4d89a9b.res"]
+
+[params]
+

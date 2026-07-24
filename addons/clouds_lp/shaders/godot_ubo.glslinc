@@ -1,0 +1,36 @@
+
+#define MAX_VIEWS 2
+
+struct GDUBO {
+	// 4.6 definition
+	mat4 projection_matrix;
+	mat4 inv_projection_matrix;
+	mat3x4 inv_view_matrix;
+	mat3x4 view_matrix;
+	
+	mat4 projection_matrix_view[MAX_VIEWS];
+	mat4 inv_projection_matrix_view[MAX_VIEWS];
+	vec4 eye_offset[MAX_VIEWS];
+	
+	mat4 main_cam_inv_view_matrix;
+	
+	vec2 viewport_size;
+	vec2 screen_pixel_size;
+	
+	vec4 directional_penumbra_shadow_kernel[32];
+	vec4 directional_soft_shadow_kernel[32];
+	vec4 penumbra_shadow_kernel[32];
+	vec4 soft_shadow_kernel[32];
+	
+	vec2 shadow_atlas_pixel_size;
+	vec2 directional_shadow_pixel_size;
+	
+	float radiance_pixel_size;
+	float radiance_border_size;
+	vec2 reflection_atlas_border_size;
+	
+	uint directional_light_count;
+	float dual_paraboloid_side;
+	float z_far;
+	float z_near;
+};

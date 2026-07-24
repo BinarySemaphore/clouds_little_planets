@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="CloudQualityProfile" format=3 uid="uid://cyen324dpfkn3"]
+
+[ext_resource type="Script" uid="uid://b5et5ufitcrtt" path="res://addons/clouds_lp/scripts/cloud_quality_profile.gd" id="1_r5c8g"]
+
+[resource]
+script = ExtResource("1_r5c8g")
+steps = 500
+step_scalar = 1.008
+min_step_size = 0.003
+deband_noise = 0.01
+deband_noise_scalar = 0.01
+metadata/_custom_type_script = "uid://b5et5ufitcrtt"

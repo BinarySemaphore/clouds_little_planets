@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://casp2y4tv6pc5"
+path="res://.godot/imported/scale_down_depth.glsl-fdac0cc086783dc86292ea9c190bdfc1.res"
+
+[deps]
+
+source_file="res://addons/clouds_lp/shaders/scale_down_depth.glsl"
+dest_files=["res://.godot/imported/scale_down_depth.glsl-fdac0cc086783dc86292ea9c190bdfc1.res"]
+
+[params]
+

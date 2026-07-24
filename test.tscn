@@ -1,0 +1,96 @@
+[gd_scene format=3 uid="uid://n8i5esr2uivp"]
+
+[ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_8uh7m"]
+[ext_resource type="Script" uid="uid://nn14i1de7aue" path="res://test_scripts/updater.gd" id="1_xersf"]
+[ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="2_6uqi0"]
+[ext_resource type="Resource" uid="uid://wfaboo082doh" path="res://addons/clouds_lp/profiles/earth.tres" id="2_vbegm"]
+[ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_ehkex"]
+[ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="5_xersf"]
+[ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="6_00tp4"]
+[ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="7_77dp3"]
+[ext_resource type="Texture2D" uid="uid://b6pk64jgq1acs" path="res://test_assets/8k_earth_daymap.jpg" id="9_00tp4"]
+[ext_resource type="Script" uid="uid://dy8uqfck5fs0w" path="res://test_scripts/pos_signal.gd" id="10_00tp4"]
+[ext_resource type="Texture2D" uid="uid://bsuafcyywu1tg" path="res://test_assets/8k_earth_normal_map.png" id="10_5tkv4"]
+[ext_resource type="Texture2D" uid="uid://boy4uu3h1g3gn" path="res://test_assets/8k_earth_specular_map.png" id="11_0m0f1"]
+[ext_resource type="Script" uid="uid://bg4nd5edqx2j6" path="res://test_scripts/camera.gd" id="13_0m0f1"]
+
+[sub_resource type="Environment" id="Environment_8uh7m"]
+background_mode = 1
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="CompositorEffect" id="CompositorEffect_ppyta"]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("2_6uqi0")
+reload = true
+light_position = Vector3(1000, 0, 0)
+cloud_quality = ExtResource("1_8uh7m")
+profile = ExtResource("2_vbegm")
+shdr_downscaler_file = ExtResource("6_00tp4")
+shdr_clouds_file = ExtResource("5_xersf")
+shdr_upscaler_file = ExtResource("7_77dp3")
+shdr_atmo_file = ExtResource("4_ehkex")
+metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
+
+[sub_resource type="Compositor" id="Compositor_6uqi0"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_ppyta")])
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5tkv4"]
+albedo_texture = ExtResource("9_00tp4")
+roughness = 0.3
+roughness_texture = ExtResource("11_0m0f1")
+normal_enabled = true
+normal_scale = 2.0
+normal_texture = ExtResource("10_5tkv4")
+
+[sub_resource type="SphereMesh" id="SphereMesh_0m0f1"]
+material = SubResource("StandardMaterial3D_5tkv4")
+radius = 50.0
+height = 100.0
+radial_segments = 256
+rings = 128
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_77dp3"]
+shading_mode = 0
+albedo_color = Color(4.415934, 4.415934, 4.415934, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_5tkv4"]
+material = SubResource("StandardMaterial3D_77dp3")
+radius = 50.0
+height = 100.0
+
+[node name="Node3D" type="Node3D" unique_id=214113929 node_paths=PackedStringArray("env", "star")]
+script = ExtResource("1_xersf")
+env = NodePath("WorldEnvironment")
+star = NodePath("Sun")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=54247361]
+environment = SubResource("Environment_8uh7m")
+compositor = SubResource("Compositor_6uqi0")
+
+[node name="Earth" type="MeshInstance3D" parent="." unique_id=855335820]
+mesh = SubResource("SphereMesh_0m0f1")
+
+[node name="Sun" type="MeshInstance3D" parent="." unique_id=1153659447]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 0)
+mesh = SubResource("SphereMesh_5tkv4")
+script = ExtResource("10_00tp4")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="Sun" unique_id=932571324]
+omni_range = 2000.0
+omni_attenuation = 0.001
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=49036016 node_paths=PackedStringArray("auto_align")]
+transform = Transform3D(0.07075993, 0.76276934, -0.64278764, 0.05937467, 0.6400395, 0.76604444, 0.9957246, -0.09237056, -2.809714e-08, 33.775917, 36.58375, -4.590428)
+near = 0.005
+far = 2000.0
+script = ExtResource("13_0m0f1")
+auto_align = NodePath("../Earth")
+local_turning = true
+turn_speed = 2.0
+min_altitude = 50.005
