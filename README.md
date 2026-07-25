@@ -67,7 +67,7 @@ This addon repository is its own testable Godot project (Godot 4.6 | Forward+ re
 1) Running the scene will use higher-res clouds and a controllable camera is provided
 
 ## Thirdparty
-### Eart Textures:
+### Earth Textures:
 In Test/Example project (not part of the addon)
 - Source: https://www.solarsystemscope.com/textures/
 - License: [Creative Commons License 4.0](https://creativecommons.org/licenses/by/4.0/)
