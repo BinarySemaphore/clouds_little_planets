@@ -105,7 +105,14 @@ This addon repository is its own testable Godot project (Godot 4.6 | Forward+ re
    - In `WorldEnvironment` > `Compositor` > `Compositor Effects` > `0` will be `CloudsLP`
    - `CloudsLP` has all the possible configurations for both atmosphere and cloud generation
    - Any `Profile` should expand for specific configuration
-1) Running the scene will use higher-res clouds and a controllable camera is provided
+1) Running the scene will use higher-res clouds and provides a controllable camera
+   - Camera Controls:
+     - `W A S D`: Move Forward, Left, Back, Right
+     - `Q Z`: Move Up and Down
+     - `Shift (hold)`: Increase movement speed
+     - `Ctrl (hold)`: Decrease movement speed
+     - `Arrows`: Rotate
+   - Default speeds can be adjusted from the edtior prior to launching (_Move Speed_ and _Turn Speed_)
 
 ## Thirdparty
 ### Earth Textures:
