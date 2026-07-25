@@ -8,6 +8,11 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
   * [Direct (from GitHub)](#direct-from-github)
 * [Guide](#guide)
   * [Video Guide](#video-guide)
+  * [Getting Started](#getting-started)
+    * [Setup](#setup)
+    * [Configuring](#configuring)
+    * [Saving Profiles](#saving-profiles)
+    * [Script Integration](#script-integration)
 * [Test](#test)
   * [Example Project](#example-project)
 * [Thirdparty](#thirdparty)
@@ -48,6 +53,9 @@ _Release Pending..._
 Clouds Little Planets (_CloudsLP_) is a compositor.
 Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
 
+### Video Guide
+_In Progress..._
+
 ### Getting Started
 #### Setup
 1) Open or Create a 3D Scene
@@ -81,9 +89,6 @@ Configuration is done in the compositor, ensure the `CloudsLP` instance is expan
 _In Progress..._
 #### Saving Profiles
 #### Script Integration
-
-### Video Guide
-_In Progress..._
 
 ## Test
 This addon repository is its own testable Godot project (Godot 4.6 | Forward+ rendering).
