@@ -22,10 +22,10 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
 - Wind (WIP)
 
 ### Screenshots
-| <img src="github/screenshots/20260724_180749.png"> | <img src="github/screenshots/20260724_180806.png"> | <img src="github/screenshots/20260724_180819.png"> |
+| <img src="github/screenshots/20260724_180734.png"> | <img src="github/screenshots/20260724_180925.png"> | <img src="github/screenshots/20260724_180901.png"> |
 | --- | --- | --- |
-| <img src="github/screenshots/20260724_180901.png"> | <img src="github/screenshots/20260724_180925.png"> | <img src="github/screenshots/20260724_180953.png"> |
-| <img src="github/screenshots/20260724_181045.png"> |
+| <img src="github/screenshots/20260724_180749.png"> | <img src="github/screenshots/20260724_180806.png"> | <img src="github/screenshots/20260724_180819.png"> |
+| <img src="github/screenshots/20260724_180953.png"> | <img src="github/screenshots/20260724_181045.png"> | |
 
 ## Install
 ### Godot AssetLib
