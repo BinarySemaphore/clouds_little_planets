@@ -32,12 +32,12 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
 _Release Pending..._
 ### Direct (from GitHub)
 1) Go to [Releases](https://github.com/BinarySemaphore/clouds_little_planets/releases)
-1) Download the latest `*.zip`
+1) Download the latest `clouds_lp.zip` file
 1) In Godot, ensure your project has `addons` folder
-1) click on `AssetLib` at the top
+1) Click on `AssetLib` at the top
 1) Find `Import...` on the top right of `AssetLib` window
-1) Select the downloaded ZIP file and click `Open`
-1) In the "Configure Asset Before Installing" window, click `Change Install Folder`
+1) Select the downloaded `clouds_lp.zip` file and click `Open`
+1) In the "__Configure Asset Before Installing__" window, click `Change Install Folder`
 1) Select `addons` folder and click `Select This Folder`
 1) Click `Install`
 1) From the menu-bar click `Project` > `Project Settings`
@@ -45,7 +45,43 @@ _Release Pending..._
 1) Enable `CloudsLP`
 
 ## Guide
+Clouds Little Planets (_CloudsLP_) is a compositor.
+Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
+
+### Getting Started
+#### Setup
+1) Open or Create a 3D Scene
+1) Add a `WorldEnvironment` to the node tree if one is not currently in the scene
+   - Optional: configure the `Environment` > `Background` with mode _Custom Color_ and set to black for space look
+1) For `WorldEnvironment` > `Compositor`, click on the `<empty>` indicator
+1) Select `Compositor` to create a compositor
+   - Learn more about compositors at the official Godot docs [here (4.6)](https://docs.godotengine.org/en/4.6/tutorials/rendering/compositor.html#the-compositor)
+1) Click the new compositor to see `Compositor Effects`
+1) Click the _Array_ to expand the effects list
+1) Click `Add Element`
+1) Click the _Folder-with-Plus_ icon next to `<empty>` in the effects list
+1) Select `CloudsLPTemplate.tres`
+   - Make sure "_Addons_" is toggled on in the selector window if you don't see anything
+1) Check it's working
+   - Center your viewer and zoom out to __85__ or more
+   - There should be a hollow sphere with colors and cloud-like blobs
+1) Right Click on the `CloudsLPTemplate.tres` and "_Save As_" or "_Make Unique_"
+   - This copies the template and allows you to configure the compositor settings
+   - "_Make Unique_" is like "_Save As_" but embeds it with the scene
+1) Click on the `CloudsLPTemplate.tres` in the effects list
+   - This expands to show all configurations (where everything lives)
+#### Configuring
+Configuration is done in the compositor, ensure the `CloudsLP` instance is expanded (See [Setup](#setup) for details).
+- Note:
+  > For any profiles and other pre-loaded resources (like gradients and noise), just like with `CloudsLPTemplate.tres`,
+  > it's recommended to save or make unique prior to making any changes.
+  > You can always create new profiles or resources at anytime as well.
+  > Nearly all parameters have hover-over hints explaining their function.
+
 _In Progress..._
+#### Saving Profiles
+#### Script Integration
+
 ### Video Guide
 _In Progress..._
 
