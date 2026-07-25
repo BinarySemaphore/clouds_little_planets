@@ -8,6 +8,8 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
   * [Direct (from GitHub)](#direct-from-github)
 * [Guide](#guide)
   * [Video Guide](#video-guide)
+* [Test](#test)
+  * [Example Project](#example-project)
 * [Thirdparty](#thirdparty)
 * [Notable Mentions](#notable-mentions)
 
@@ -46,6 +48,23 @@ _Release Pending..._
 _In Progress..._
 ### Video Guide
 _In Progress..._
+
+## Test
+This addon repository is its own testable Godot project (Godot 4.6 | Forward+ rendering).
+### Example Project
+1) Download this repository
+   1) Find and select `Code` at the top of GitHub
+   1) Click `Download ZIP`
+1) Extract project to an appropriate directory
+1) Open Godot Project Manager
+1) Click `Scan` or `Import` (depends on where you put the project)
+1) Open the project
+1) Open `test.tscn` scene
+   - You should see Earth with an atmosphere and low-res clouds
+   - In `WorldEnvironment` > `Compositor` > `Compositor Effects` > `0` will be `CloudsLP`
+   - `CloudsLP` has all the possible configurations for both atmosphere and cloud generation
+   - Any `Profile` should expand for specific configuration
+1) Running the scene will use higher-res clouds and a controllable camera is provided
 
 ## Thirdparty
 ### Eart Textures:
