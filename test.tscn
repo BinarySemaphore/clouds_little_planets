@@ -1,7 +1,6 @@
 [gd_scene format=3 uid="uid://n8i5esr2uivp"]
 
 [ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_8uh7m"]
-[ext_resource type="Script" uid="uid://nn14i1de7aue" path="res://test_scripts/updater.gd" id="1_xersf"]
 [ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="2_6uqi0"]
 [ext_resource type="Resource" uid="uid://wfaboo082doh" path="res://addons/clouds_lp/profiles/earth.tres" id="2_vbegm"]
 [ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_ehkex"]
@@ -19,7 +18,7 @@ background_mode = 1
 tonemap_mode = 2
 glow_enabled = true
 
-[sub_resource type="CompositorEffect" id="CompositorEffect_ppyta"]
+[sub_resource type="CompositorEffect" id="CompositorEffect_5tkv4"]
 resource_local_to_scene = false
 resource_name = ""
 enabled = true
@@ -27,8 +26,7 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("2_6uqi0")
-reload = true
-light_position = Vector3(1000, 0, 0)
+light_source = NodePath("../Sun/OmniLight3D")
 cloud_quality = ExtResource("1_8uh7m")
 profile = ExtResource("2_vbegm")
 shdr_downscaler_file = ExtResource("6_00tp4")
@@ -38,7 +36,7 @@ shdr_atmo_file = ExtResource("4_ehkex")
 metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
 
 [sub_resource type="Compositor" id="Compositor_6uqi0"]
-compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_ppyta")])
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_5tkv4")])
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5tkv4"]
 albedo_texture = ExtResource("9_00tp4")
@@ -64,10 +62,7 @@ material = SubResource("StandardMaterial3D_77dp3")
 radius = 50.0
 height = 100.0
 
-[node name="Node3D" type="Node3D" unique_id=214113929 node_paths=PackedStringArray("env", "star")]
-script = ExtResource("1_xersf")
-env = NodePath("WorldEnvironment")
-star = NodePath("Sun")
+[node name="Node3D" type="Node3D" unique_id=214113929]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=54247361]
 environment = SubResource("Environment_8uh7m")
@@ -77,7 +72,7 @@ compositor = SubResource("Compositor_6uqi0")
 mesh = SubResource("SphereMesh_0m0f1")
 
 [node name="Sun" type="MeshInstance3D" parent="." unique_id=1153659447]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 1000)
 mesh = SubResource("SphereMesh_5tkv4")
 script = ExtResource("10_00tp4")
 

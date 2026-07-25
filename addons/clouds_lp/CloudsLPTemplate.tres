@@ -16,7 +16,6 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("3_gpnjx")
-light_position = Vector3(1000, 0, 0)
 cloud_quality = ExtResource("1_cw3qd")
 profile = ExtResource("2_e2t72")
 shdr_downscaler_file = ExtResource("6_gqhol")

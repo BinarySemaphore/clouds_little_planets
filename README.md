@@ -73,10 +73,10 @@ _In Progress..._
 1) Check it's working
    - Center your viewer and zoom out to __85__ or more
    - There should be a hollow sphere with colors and cloud-like blobs
-1) Right Click on the `CloudsLPTemplate.tres` and "_Save As_" or "_Make Unique_"
+1) Right Click on the `CloudsLPTemplate.tres` and "_Make Unique_" or "_Save As_"
    - This copies the template and allows you to configure the compositor settings
    - "_Make Unique_" is like "_Save As_" but embeds it with the scene
-1) Click on the `CloudsLPTemplate.tres` in the effects list
+1) Click on the effect in the effects list
    - This expands to show all configurations (where everything lives)
 #### Configuring
 Configuration is done in the compositor, ensure the `CloudsLP` instance is expanded (See [Setup](#setup) for details).
@@ -85,6 +85,8 @@ Configuration is done in the compositor, ensure the `CloudsLP` instance is expan
   > it's recommended to save or make unique prior to making any changes.
   > You can always create new profiles or resources at anytime as well.
   > Nearly all parameters have hover-over hints explaining their function.
+
+- `Light Source`: _Light3D_ node should have a unique name in scene
 
 _In Progress..._
 #### Saving Profiles

@@ -28,12 +28,12 @@ extends CompositorEffect
 		_reload_shaders = true
 		_mutex.unlock()
 ## Write PNGs (see Output) for debugging.
-@export var write_debug := false:
-	set(value):
-		_mutex.lock()
-		write_debug = false
-		_req_write_debug = value
-		_mutex.unlock()
+#@export var write_debug := false:
+	#set(value):
+		#_mutex.lock()
+		#write_debug = false
+		#_req_write_debug = value
+		#_mutex.unlock()
 ## Force disable atmosphere.
 ## Overrides [code]Profile[/code].
 @export var atmo_enabled := true
@@ -47,8 +47,7 @@ extends CompositorEffect
 ## [color=white]Note:[/color] ignored for values <= 0.0.
 @export var max_distance := 0.0
 @export var position := Vector3.ZERO
-@export var light_position := Vector3.ZERO
-@export var light_color := Color.WHITE
+@export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath
 ## Cloud Quality Profile.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
@@ -94,6 +93,7 @@ var _reload_shaders := false
 var _longterm_uniforms_good := false
 var _scaled_down := 1
 var _mutex := Mutex.new()
+var _light_source: Light3D
 var _last_size: Vector2i
 var _scaled_size: Vector2i
 var _config_data: PackedByteArray
@@ -190,6 +190,16 @@ func _cleanup(shaders := true, data := true) -> void:
 
 func _load_and_init() -> bool:
 	_cleanup(true, false)  # Cleanup shaders only
+	if light_source and not _light_source:
+		print("Resolving light source path (rel %s) from scene root" % light_source)
+		var light_source_name := light_source.get_name(light_source.get_name_count() - 1)
+		var scene_tree: SceneTree = Engine.get_main_loop()
+		if Engine.is_editor_hint():
+			_light_source = scene_tree.edited_scene_root.find_child(light_source_name)
+		else:
+			_light_source = scene_tree.root.find_child(light_source_name, true, false)
+		if not _light_source:
+			push_error("Could not find light source \"%s\", make sure it's in the scene tree or reassign Light Source and Reload" % light_source_name)
 	print("Loading Resources (shaders recompiling)...")
 	
 	if not profile:
@@ -545,6 +555,19 @@ func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_de
 func _update_config_data() -> void:
 	var idx := 0
 	var linear_color: Color
+	
+	var light_position: Vector3
+	if _light_source:
+		if _light_source is not DirectionalLight3D:
+			light_position = _light_source.global_position
+		else:
+			light_position = _light_source.quaternion * Vector3.BACK * 1000.0 \
+						   * (maxf(profile.planet_radius, 1.0) + profile.atmo_height) \
+						   + position
+	else:
+		light_position = Vector3.RIGHT * 1000.0 \
+					   * (maxf(profile.planet_radius, 1.0) + profile.atmo_height) \
+					   + position
 	_config_data.encode_float(idx, light_position.x); idx += 4
 	_config_data.encode_float(idx, light_position.y); idx += 4
 	_config_data.encode_float(idx, light_position.z); idx += 4
@@ -605,6 +628,9 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, linear_color.b); idx += 4
 	_config_data.encode_float(idx, profile.atmo_star_glow); idx += 4
 	
+	var light_color := Color.WHITE
+	if _light_source:
+		light_color = _light_source.light_color
 	linear_color = light_color.srgb_to_linear()
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
