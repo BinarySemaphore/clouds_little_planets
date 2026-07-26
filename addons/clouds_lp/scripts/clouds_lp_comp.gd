@@ -576,10 +576,13 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, light_position.z); idx += 4
 	_config_data.encode_float(idx, max_distance); idx += 4
 	
+	var z_clip_offset := 0.0
+	if flat_world:
+		z_clip_offset = -0.01
 	_config_data.encode_float(idx, position.x); idx += 4
 	_config_data.encode_float(idx, position.y); idx += 4
 	_config_data.encode_float(idx, position.z); idx += 4
-	_config_data.encode_float(idx, profile.planet_radius); idx += 4
+	_config_data.encode_float(idx, profile.planet_radius + z_clip_offset); idx += 4
 	
 	_config_data.encode_float(idx, profile.atmo_height); idx += 4
 	_config_data.encode_float(idx, profile.cld_beers_factor); idx += 4

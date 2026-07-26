@@ -87,7 +87,6 @@ Configuration is done in the compositor, ensure the `CloudsLP` instance is expan
   > Nearly all parameters have hover-over hints explaining their function.
 
 - `Flat World`: Force flat world (Y axis is altitude). `Profile.Planet.Radius` will be used as sea-level.
-  - Note: `Recommend setting Radius a fraction less than geometry level (example: a plane at Y 0.0, radius should be -0.01).`
 - `Light Source`: _Light3D_ node should have a unique name in scene
 
 _In Progress..._
