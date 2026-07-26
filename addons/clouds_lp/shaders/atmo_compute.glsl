@@ -30,20 +30,27 @@ float atmo_density(float altitude) {
 
 float alt_from_pos(vec3 pos) {
 	vec3 rel_pos = pos - config.data.pos;
+	if (config.data.flat_world) {
+		return clamp(rel_pos.y - config.data.radius, 0.0, config.data.atmo_alt);
+	}
 	return clamp(length(rel_pos) - config.data.radius, 0.0, config.data.atmo_alt);
 }
 
 vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_direct_light) {
 	if (dist <= 0.0) return vec4(0.0);
-	start *= rand_near_one(0.0001);
+	start *= rand_near_one(0.0001 * config.data.cl_global_scale);
 	float light_wrap = 0.05;
 	float atmo_light_wrap = light_wrap;
 	float star_fade = 1.0 - config.data.star_glow;
 
 	vec4 color = vec4(0.0);
+	vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
 
 	float step_size = dist / float(samples - 1);
 	float atmo_radius = config.data.radius + config.data.atmo_alt;
+	if (config.data.flat_world) {
+		atmo_radius = 50.0 * config.data.cl_global_scale + config.data.atmo_alt;
+	}
 	float travel_dist = 0.0;
 	float direct_light = 1.0;
 	float total_density = 0.0;
@@ -56,9 +63,16 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 	if(no_direct_light) {
 		direct_light = 0.0;
 	} else {
-		hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
+		float wrap_lim = light_wrap * config.data.radius;
+		if (config.data.flat_world) {
+			wrap_lim = light_wrap;
+			hit_planet = vec2(0.0);
+			hit_planet.y = plane_intersect(start, dir, up * config.data.radius, up);
+		} else {
+			hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
+		}
 		if (hit_planet.y > 0.0) {
-			direct_light = 1.0 - smoothstep(0.0, light_wrap * config.data.radius, hit_planet.y);
+			direct_light = 1.0 - smoothstep(0.0, wrap_lim, hit_planet.y);
 		}
 	}
 	
@@ -70,7 +84,11 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 	for (int i = 0; i < samples; i++) {
 		pos = start + travel_dist * dir;
 		rel_pos = pos - config.data.pos;
-		altitude = length(rel_pos) - config.data.radius;
+		if (config.data.flat_world) {
+			altitude = rel_pos.y - config.data.radius;
+		} else {
+			altitude = length(rel_pos) - config.data.radius;
+		}
 		if (altitude < -1.0) {
 			travel_dist += step_size;
 			continue;
@@ -79,7 +97,11 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 		to_light = normalize(config.data.light_pos - pos);
 		density = exp(-altitude_normal * config.data.density_falloff);
 
-		planet_norm = normalize(rel_pos);
+		if (config.data.flat_world) {
+			planet_norm = up;
+		} else {
+			planet_norm = normalize(rel_pos);
+		}
 		from_light = dot(planet_norm, to_light);
 		path_light = dot(dir, to_light);
 		up_align = dot(dir, planet_norm);
@@ -90,7 +112,7 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 			0.0, 1.0
 		);
 
-		total_density += density * step_size;
+		total_density += density * step_size / config.data.cl_global_scale;
 		total_density += (1.0 - density) * overhead_scatter;
 
 		eng_from_star = 20.0 * direct_light * smoothstep(star_fade, 1.0, path_light);
@@ -153,10 +175,21 @@ void main() {
 
 	bool is_valid = false;
 	vec2 hit;
-	vec3 start_pos = vec3(0.0);
 	float atmo_travel_dist = 0.0;
+	vec3 start_pos = vec3(0.0);
 	float max_travel_dist = 0.0;
-	if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
+	if (config.data.flat_world) {
+		hit = vbox_intersect(cam_pos, dir, vec3(0.0, config.data.radius, 0.0), config.data.atmo_alt);
+		if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {
+			hit.y = 0.0;
+		}
+		if (hit.y > 0.0 && hit.x <= depth_lim) {
+			start_pos = cam_pos + dir * hit.x;
+			hit.y = min(hit.y, 50.0 * config.data.cl_global_scale + config.data.atmo_alt);
+			max_travel_dist = min(depth_lim - hit.x, hit.y);
+			is_valid = true;
+		}
+	} else if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
 		hit = sphere_intersect_prechecked(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt);
 		// Invalidate any distances beyond dist_limit when used
 		if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {

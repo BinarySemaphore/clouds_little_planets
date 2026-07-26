@@ -1,6 +1,7 @@
 const float PI = 3.14159265359;
 const float TAU = 6.28318530718;
 const float PI_HALF = PI * 0.5;
+const float MAX_DIST = 1000000.0;
 
 uint seed;
 
@@ -190,4 +191,46 @@ vec2 sphere_intersect(vec3 pos, vec3 dir, vec3 center, float radius) {
 	// Starting-from-Outside
 	// Note: t2 simplified from t2 - t1 => (W + Z_sqrt) - (W - Z_sqrt)
 	return vec2(W - Z_sqrt, 2.0 * Z_sqrt);
+}
+
+/* Returns distance to plane (exclusively - ignores parallel along plane)
+ * If negative, it never hits plane by dir.
+*/
+float plane_intersect(vec3 pos, vec3 dir, vec3 plane_pos, vec3 plane_norm) {
+	/*
+	Line:
+		p = a + d * l
+	Plane:
+		N dot (p - b) = 0
+	
+	N dot (a + d * l - b) = 0
+	l = N dot (b - a) / N dot d
+	check N dot d, if 0, check if line in plane, if not is parallel and never reaches
+	*/
+
+	float nd = dot(plane_norm, dir);
+	if (abs(nd) <= 0.0001) {
+		// Could technically be in plane, but this is exclusive.
+		return -1.0;
+	}
+	return dot(plane_norm, plane_pos - pos) / nd;
+}
+
+vec2 vbox_intersect(vec3 pos, vec3 dir, vec3 base, float height) {
+	vec3 up = vec3(0.0, 1.0, 0.0);
+	float rel_y = pos.y - base.y;
+	float top = plane_intersect(pos, dir, vec3(base.x, base.y + height, base.z), up);
+	float bottom = plane_intersect(pos, dir, base, up);
+
+	if (rel_y > height) {
+		if (top < 0.0) return vec2(0.0, 0.0);
+		return vec2(top, bottom - top);
+	}
+	if (rel_y < 0.0) {
+		if (bottom < 0.0) return vec2(0.0, 0.0);
+		return vec2(bottom, top - bottom);
+	}
+	if (top < 0.0 && bottom < 0.0) return vec2(0.0, MAX_DIST);
+	if (top < 0.0) return vec2(0.0, bottom);
+	return vec2(0.0, top);
 }

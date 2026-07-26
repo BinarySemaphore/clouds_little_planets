@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="AtmosphereProfile" format=3 uid="uid://br0bakw18oidv"]
+
+[ext_resource type="Texture2D" uid="uid://dsoo1ywxlvmqa" path="res://addons/clouds_lp/noise/01_height.tres" id="1_6y0d4"]
+[ext_resource type="NoiseTexture3D" uid="uid://d2j8xtettj86a" path="res://addons/clouds_lp/noise/01_large.tres" id="2_efks5"]
+[ext_resource type="Texture2D" uid="uid://djf8566a0rvyw" path="res://addons/clouds_lp/noise/01_mask.tres" id="3_6y0d4"]
+[ext_resource type="NoiseTexture3D" uid="uid://jo0idns52fuo" path="res://addons/clouds_lp/noise/01_medium.tres" id="4_7bl1v"]
+[ext_resource type="NoiseTexture3D" uid="uid://cyvflshjc7nkw" path="res://addons/clouds_lp/noise/01_small.tres" id="5_q61i7"]
+[ext_resource type="CompressedTexture3D" uid="uid://dxblpixysg83u" path="res://addons/clouds_lp/noise/curl_noise_packed.png" id="6_lhv6b"]
+[ext_resource type="Script" uid="uid://cl330c84bmlil" path="res://addons/clouds_lp/scripts/atmosphere_profile.gd" id="7_ciiko"]
+
+[resource]
+script = ExtResource("7_ciiko")
+planet_radius = 0.0
+atmo_height = 10.0
+atmo_light_pen = 10.0
+atmo_density_falloff = 6.5
+cld_light_scatter = 1.5
+cld_density_factor = 1.5
+ns_adj_threshold = Vector2(0.5, 0.7)
+ns_adj_wisp_factor = 0.3
+ns_adj_global_scale = 10.0
+ns_adj_scale = Vector4(8, 2, 2, 2)
+ns_adj_mask_offset = Vector2(0.368, 0)
+ns_adj_offset = Vector3(0, 0, -0.13)
+ns_height = ExtResource("1_6y0d4")
+ns_mask = ExtResource("3_6y0d4")
+ns_large = ExtResource("2_efks5")
+ns_medium = ExtResource("4_7bl1v")
+ns_small = ExtResource("5_q61i7")
+ns_wisp = ExtResource("6_lhv6b")
+metadata/_custom_type_script = "uid://cl330c84bmlil"

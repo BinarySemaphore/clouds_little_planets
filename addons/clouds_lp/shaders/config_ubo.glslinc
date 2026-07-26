@@ -35,11 +35,11 @@ struct CGUBO {
 	float star_glow;
 	vec3 color_star;
 	float density_falloff;
-	vec3 reserved_2;
+	vec3 reserved_1;
 	float refract_bend;
 
 	bool atmo_enable;
 	bool cloud_enable;
 	bool cloud_atmo_light_enable;
-	float reserved_3;
+	bool flat_world;
 };

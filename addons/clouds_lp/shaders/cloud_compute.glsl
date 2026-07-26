@@ -39,20 +39,27 @@ float atmo_density(float altitude) {
 
 float alt_from_pos(vec3 pos) {
 	vec3 rel_pos = pos - config.data.pos;
+	if (config.data.flat_world) {
+		return clamp(rel_pos.y - config.data.radius, 0.0, config.data.atmo_alt);
+	}
 	return clamp(length(rel_pos) - config.data.radius, 0.0, config.data.atmo_alt);
 }
 
 vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_direct_light) {
 	if (dist <= 0.0) return vec4(0.0);
-	start *= rand_near_one(0.0001);
+	start *= rand_near_one(0.0001 * config.data.cl_global_scale);
 	float light_wrap = 0.05;
 	float atmo_light_wrap = light_wrap;
 	float star_fade = 1.0 - config.data.star_glow;
 
 	vec4 color = vec4(0.0);
+	vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
 
 	float step_size = dist / float(samples - 1);
 	float atmo_radius = config.data.radius + config.data.atmo_alt;
+	if (config.data.flat_world) {
+		atmo_radius = 50.0 * config.data.cl_global_scale + config.data.atmo_alt;
+	}
 	float travel_dist = 0.0;
 	float direct_light = 1.0;
 	float total_density = 0.0;
@@ -65,9 +72,16 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 	if(no_direct_light) {
 		direct_light = 0.0;
 	} else {
-		hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
+		float wrap_lim = light_wrap * config.data.radius;
+		if (config.data.flat_world) {
+			wrap_lim = light_wrap;
+			hit_planet = vec2(0.0);
+			hit_planet.y = plane_intersect(start, dir, up * config.data.radius, up);
+		} else {
+			hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
+		}
 		if (hit_planet.y > 0.0) {
-			direct_light = 1.0 - smoothstep(0.0, light_wrap * config.data.radius, hit_planet.y);
+			direct_light = 1.0 - smoothstep(0.0, wrap_lim, hit_planet.y);
 		}
 	}
 	
@@ -79,7 +93,11 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 	for (int i = 0; i < samples; i++) {
 		pos = start + travel_dist * dir;
 		rel_pos = pos - config.data.pos;
-		altitude = length(rel_pos) - config.data.radius;
+		if (config.data.flat_world) {
+			altitude = rel_pos.y - config.data.radius;
+		} else {
+			altitude = length(rel_pos) - config.data.radius;
+		}
 		if (altitude < -1.0) {
 			travel_dist += step_size;
 			continue;
@@ -88,18 +106,22 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 		to_light = normalize(config.data.light_pos - pos);
 		density = exp(-altitude_normal * config.data.density_falloff);
 
-		planet_norm = normalize(rel_pos);
+		if (config.data.flat_world) {
+			planet_norm = up;
+		} else {
+			planet_norm = normalize(rel_pos);
+		}
 		from_light = dot(planet_norm, to_light);
 		path_light = dot(dir, to_light);
 		up_align = dot(dir, planet_norm);
 		overhead_scatter = clamp(
-			0.5 * clamp(from_light + 0.5, 0.0, 1.0)  // Positioning
+			0.5 * clamp(from_light, 0.0, 1.0)  // Positioning
 			* clamp(up_align + 0.3, 0.0, 1.0)  // Apply up and horizon
 			* smoothstep(config.data.atmo_alt * 1.5 / config.data.density_falloff, 0.0, start_altitude),  // Primary driven by camera altitude
 			0.0, 1.0
 		);
 
-		total_density += density * step_size;
+		total_density += density * step_size / config.data.cl_global_scale;
 		total_density += (1.0 - density) * overhead_scatter;
 
 		eng_from_star = 20.0 * direct_light * smoothstep(star_fade, 1.0, path_light);
@@ -115,9 +137,9 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 		// Reyleigh scatter
 		// Primary
 		r1 = smoothstep(r_to_m_line * 0.25, 1.0, from_light);
-		r2 = 0.25 * clamp(up_align + 0.5, 0.0, 1.0)
+		r2 = 0.25 * clamp(abs(up_align) + 0.5, 0.0, 1.0)
 					// Positioning
-					* smoothstep(0.0, r_to_m_line * 0.5, from_light);
+					* smoothstep(end_line * 0.5, r_to_m_line * 0.5, from_light);
 		// Mie scatter
 		// Primary
 		m1 = 0.5 * travel_dist * travel_dist / atmo_radius
@@ -144,6 +166,9 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 }
 
 vec2 lat_long_from_pos_to_uv(vec3 pos) {
+	if (config.data.flat_world) {
+		return vec2(pos.x, pos.z) / (100.0 * config.data.cl_global_scale);
+	}
 	vec3 norm_pos = normalize(pos);
 	float lat_angle = asin(-norm_pos.y / 1.0);
 	float long_angle = atan(norm_pos.x, norm_pos.z);
@@ -238,6 +263,15 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 	vec4 color_atmo = vec4(0.0);
 	vec3 color_atmo_applied;
 
+	vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
+	vec3 base = vec3(0.0, config.data.radius, 0.0);  // Used for flat_world
+	float effective_radius = config.data.radius;
+	float planet_occlusion_atten = 0.05 * config.data.radius;
+	if (config.data.flat_world) {
+		effective_radius = 50.0 * config.data.cl_global_scale;
+		planet_occlusion_atten = 0.05;
+	}
+
 	float filter_threshold = 0.0005;
 	float light_pen = config.data.cl_light_pen * config.data.cl_global_scale;
 	for (int i = 0; i < config.data.cl_steps; i++) {
@@ -261,18 +295,25 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 
 			scatter_lumin = 0.0;
 			l_dir = normalize(config.data.light_pos - pos);
-			vec2 hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius + config.data.atmo_alt);
-			vec2 planet_hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius);
+			vec2 hit;
+			vec2 planet_hit;
+			if (config.data.flat_world) {
+				hit = vbox_intersect(pos, l_dir, base, config.data.atmo_alt);
+				planet_hit = vec2(0.0);
+				planet_hit.y = plane_intersect(pos, l_dir, up * config.data.radius, up);
+			} else {
+				hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius + config.data.atmo_alt);
+				planet_hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius);
+			}
 			float dist_atmo = hit.y;
-			float planet_occlusion_atten = 0.05;
-			if (planet_hit.y < config.data.radius * planet_occlusion_atten) {
+			if (planet_hit.y < planet_occlusion_atten) {
 				for (int j = 1; j <= 5; j++) {
 					l_pos = pos + l_dir * light_pen * float(j);
 					scatter_lumin += cloud_density_at_pos(l_pos) * config.data.cl_density_scalar;
 				}
 				scatter_lumin = 1.0 - clamp(scatter_lumin / config.data.cl_light_scatter, 0.0, 1.0);
 				// Normalize flight distance by quarter of total atmo radius
-				float flight_through_atmo = clamp(dist_atmo * 5.0 / (config.data.radius + config.data.atmo_alt), 0.0, 1.0);
+				float flight_through_atmo = clamp(dist_atmo * 5.0 / (effective_radius + config.data.atmo_alt), 0.0, 1.0);
 				scatter_lumin *= 1.0 - flight_through_atmo;
 			} else {
 				dist_atmo = planet_hit.x;
@@ -333,7 +374,18 @@ void main() {
 	vec3 start_pos = vec3(0.0);
 	float atmo_travel_dist = 0.0;
 	float max_travel_dist = 0.0;
-	if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
+	if (config.data.flat_world) {
+		hit = vbox_intersect(cam_pos, dir, vec3(0.0, config.data.radius, 0.0), config.data.atmo_alt);
+		if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {
+			hit.y = 0.0;
+		}
+		if (hit.y > 0.0 && hit.x <= depth_lim) {
+			start_pos = cam_pos + dir * hit.x;
+			hit.y = min(hit.y, 50.0 * config.data.cl_global_scale + config.data.atmo_alt);
+			max_travel_dist = min(depth_lim - hit.x, hit.y);
+			is_valid = true;
+		}
+	} else if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
 		hit = sphere_intersect_prechecked(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt);
 		// Invalidate any distances beyond dist_limit when used
 		if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {

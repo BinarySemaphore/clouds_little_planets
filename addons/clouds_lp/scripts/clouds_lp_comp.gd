@@ -43,6 +43,9 @@ extends CompositorEffect
 ## Force disable cloud atmospheric lighting.[br]
 ## Overrides [code]Profile[/code].
 @export var cloud_atmo_light_enabled := true
+## Force flat world (Y axis is altitude).[br]
+## [code]Profile.Planet.Radius[/code] will be used as sea-level.
+@export var flat_world := false
 ## Optional distance limit, useful for simple cloud sampling.[br]
 ## [color=white]Note:[/color] ignored for values <= 0.0.
 @export var max_distance := 0.0
@@ -645,7 +648,7 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, float(atmo_enabled and profile.planet_has_atmosphere)); idx += 4
 	_config_data.encode_float(idx, float(cloud_enabled and profile.planet_has_clouds)); idx += 4
 	_config_data.encode_float(idx, float(cloud_atmo_light_enabled)); idx += 4
-	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, float(flat_world)); idx += 4
 	
 	if _config_data_rid.is_valid():
 		_rd.buffer_update(_config_data_rid, 0, _config_data.size(), _config_data)

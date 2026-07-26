@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://pq0qd2bfcmop"]
+
+[ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_t8otc"]
+[ext_resource type="Resource" uid="uid://br0bakw18oidv" path="res://earth_flat.tres" id="2_t8otc"]
+[ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="3_xiq1t"]
+[ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_hm56r"]
+[ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="5_r5xd6"]
+[ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="6_bwc7l"]
+[ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="7_6roj2"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_l8nfm"]
+sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
+
+[sub_resource type="Sky" id="Sky_56yhl"]
+sky_material = SubResource("ProceduralSkyMaterial_l8nfm")
+
+[sub_resource type="Environment" id="Environment_pnil2"]
+background_mode = 1
+sky = SubResource("Sky_56yhl")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="CompositorEffect" id="CompositorEffect_huson"]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("3_xiq1t")
+flat_world = true
+light_source = NodePath("../DirectionalLight3D")
+cloud_quality = ExtResource("1_t8otc")
+profile = ExtResource("2_t8otc")
+shdr_downscaler_file = ExtResource("6_bwc7l")
+shdr_clouds_file = ExtResource("5_r5xd6")
+shdr_upscaler_file = ExtResource("7_6roj2")
+shdr_atmo_file = ExtResource("4_hm56r")
+metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
+
+[sub_resource type="Compositor" id="Compositor_g0vck"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_huson")])
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_2ij8o"]
+size = Vector2(500, 500)
+
+[node name="Node3D" type="Node3D" unique_id=2128860581]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1838696776]
+environment = SubResource("Environment_pnil2")
+compositor = SubResource("Compositor_g0vck")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1517354875]
+transform = Transform3D(1, 0, 0, 0, -0.77933794, 0.6266039, 0, -0.6266039, -0.77933794, 0, 0, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1009312384]
+mesh = SubResource("PlaneMesh_2ij8o")
