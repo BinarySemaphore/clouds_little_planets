@@ -31,17 +31,19 @@ extends CompositorEffect
 ## Force reload of shader files.
 @export var reload := false:
 	set(value):
-		_mutex.lock()
 		reload = false
-		_reload_shaders = true
-		_mutex.unlock()
+		if value:
+			_mutex.lock()
+			_reload_shaders = true
+			_mutex.unlock()
 ## Write PNGs (see Output) for debugging.
 #@export var write_debug := false:
 	#set(value):
-		#_mutex.lock()
 		#write_debug = false
-		#_req_write_debug = value
-		#_mutex.unlock()
+		#if value:
+			#_mutex.lock()
+			#_req_write_debug = true
+			#_mutex.unlock()
 ## Force disable atmosphere.
 ## Overrides [code]Profile[/code].
 @export var atmo_enabled := true
@@ -53,7 +55,12 @@ extends CompositorEffect
 @export var cloud_atmo_light_enabled := true
 ## Force flat world (Y axis is altitude).[br]
 ## [code]Profile.Planet.Radius[/code] will be used as sea-level.
-@export var flat_world := false
+@export var flat_world := false:
+	set(value):
+		flat_world = value
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
 ## Optional distance limit, useful for simple cloud sampling.[br]
 ## [color=white]Note:[/color] ignored for values <= 0.0.
 @export var max_distance := 0.0
@@ -64,22 +71,32 @@ extends CompositorEffect
 ## [br]See [color=white]Scale Down Power[/color] for more performance control.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
-		_mutex.lock()
 		cloud_quality = value
+		_mutex.lock()
 		_reload_shaders = true
 		_mutex.unlock()
 ## Atmosphere and Cloud Profile.
 @export var profile: AtmosphereProfile:
 	set(value):
-		_mutex.lock()
 		profile = value
+		_mutex.lock()
 		_reload_shaders = true
 		_mutex.unlock()
 @export_group("Compute Shaders", "shdr")
-@export var shdr_downscaler_file: RDShaderFile
-@export var shdr_clouds_file: RDShaderFile
-@export var shdr_upscaler_file: RDShaderFile
-@export var shdr_atmo_file: RDShaderFile
+## res://addons/clouds_lp/shaders/scale_down_depth.glsl
+@export var shdr_downscaler_file: RDShaderFile = preload("uid://casp2y4tv6pc5")
+## res://addons/clouds_lp/shaders/cloud_compute.glsl
+@export var shdr_clouds_file: RDShaderFile = preload("uid://gkuc4rs1xftu")
+## res://addons/clouds_lp/shaders/cloud_compute_flat.glsl
+@export var shdr_clouds_flat_file: RDShaderFile = preload("uid://cyu4k4xd4ou3e")
+## res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl[br]
+## [color=white]Altenatives:[/color][br]
+## res://addons/clouds_lp/shaders/sclae_up_raw.glsl
+@export var shdr_upscaler_file: RDShaderFile = preload("uid://bxdhxwue5ip2x")
+## res://addons/clouds_lp/shaders/atmo_compute.glsl
+@export var shdr_atmo_file: RDShaderFile = preload("uid://k8gfd23cyxdt")
+## res://addons/clouds_lp/shaders/atmo_compute_flat.glsl
+@export var shdr_atmo_flat_file: RDShaderFile = preload("uid://cb200h5c71etn")
 
 var _rd: RenderingDevice
 var _shader_scale_down: RID
@@ -235,7 +252,11 @@ func _load_and_init() -> bool:
 	if not shader_scale_down_spirv: return false
 	_shader_scale_down = _rd.shader_create_from_spirv(shader_scale_down_spirv)
 	
-	var shader_clouds_spirv := shdr_clouds_file.get_spirv()
+	var shader_clouds_spirv: RDShaderSPIRV
+	if flat_world:
+		shader_clouds_spirv = shdr_clouds_flat_file.get_spirv()
+	else:
+		shader_clouds_spirv = shdr_clouds_file.get_spirv()
 	if not shader_clouds_spirv: return false
 	_shader_clouds = _rd.shader_create_from_spirv(shader_clouds_spirv)
 	
@@ -243,7 +264,11 @@ func _load_and_init() -> bool:
 	if not shader_scale_up_spirv: return false
 	_shader_scale_up = _rd.shader_create_from_spirv(shader_scale_up_spirv)
 	
-	var shader_atmo_spirv := shdr_atmo_file.get_spirv()
+	var shader_atmo_spirv: RDShaderSPIRV
+	if flat_world:
+		shader_atmo_spirv = shdr_atmo_flat_file.get_spirv()
+	else:
+		shader_atmo_spirv = shdr_atmo_file.get_spirv()
 	if not shader_atmo_spirv: return false
 	_shader_atmo = _rd.shader_create_from_spirv(shader_atmo_spirv)
 	
@@ -661,7 +686,7 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, float(atmo_enabled and profile.planet_has_atmosphere)); idx += 4
 	_config_data.encode_float(idx, float(cloud_enabled and profile.planet_has_clouds)); idx += 4
 	_config_data.encode_float(idx, float(cloud_atmo_light_enabled)); idx += 4
-	_config_data.encode_float(idx, float(flat_world)); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
 	
 	if _config_data_rid.is_valid():
 		_rd.buffer_update(_config_data_rid, 0, _config_data.size(), _config_data)

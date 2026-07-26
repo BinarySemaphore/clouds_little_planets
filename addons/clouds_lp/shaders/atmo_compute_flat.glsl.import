@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://cb200h5c71etn"
+path="res://.godot/imported/atmo_compute_flat.glsl-467c0dc7eb9a2c7fd6074a2dec82ad1a.res"
+
+[deps]
+
+source_file="res://addons/clouds_lp/shaders/atmo_compute_flat.glsl"
+dest_files=["res://.godot/imported/atmo_compute_flat.glsl-467c0dc7eb9a2c7fd6074a2dec82ad1a.res"]
+
+[params]
+

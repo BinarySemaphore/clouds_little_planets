@@ -1,8 +1,8 @@
 #[compute]
 #version 450
 
-#include "./godot_ubo.glslinc"
-#include "./utils.glslinc"
+#include "./includes/struct_ubo_godot.glslinc"
+#include "./includes/utils.glslinc"
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 

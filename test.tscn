@@ -4,9 +4,11 @@
 [ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="2_6uqi0"]
 [ext_resource type="Resource" uid="uid://wfaboo082doh" path="res://addons/clouds_lp/profiles/earth.tres" id="2_vbegm"]
 [ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_ehkex"]
+[ext_resource type="RDShaderFile" uid="uid://cb200h5c71etn" path="res://addons/clouds_lp/shaders/atmo_compute_flat.glsl" id="5_0m0f1"]
 [ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="5_xersf"]
 [ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="6_00tp4"]
 [ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="7_77dp3"]
+[ext_resource type="RDShaderFile" uid="uid://cyu4k4xd4ou3e" path="res://addons/clouds_lp/shaders/cloud_compute_flat.glsl" id="7_b0q6j"]
 [ext_resource type="Texture2D" uid="uid://b6pk64jgq1acs" path="res://test_assets/8k_earth_daymap.jpg" id="9_00tp4"]
 [ext_resource type="Texture2D" uid="uid://bsuafcyywu1tg" path="res://test_assets/8k_earth_normal_map.png" id="10_5tkv4"]
 [ext_resource type="Texture2D" uid="uid://boy4uu3h1g3gn" path="res://test_assets/8k_earth_specular_map.png" id="11_0m0f1"]
@@ -28,10 +30,6 @@ script = ExtResource("2_6uqi0")
 light_source = NodePath("../Sun/OmniLight3D")
 cloud_quality = ExtResource("1_8uh7m")
 profile = ExtResource("2_vbegm")
-shdr_downscaler_file = ExtResource("6_00tp4")
-shdr_clouds_file = ExtResource("5_xersf")
-shdr_upscaler_file = ExtResource("7_77dp3")
-shdr_atmo_file = ExtResource("4_ehkex")
 metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
 
 [sub_resource type="Compositor" id="Compositor_6uqi0"]

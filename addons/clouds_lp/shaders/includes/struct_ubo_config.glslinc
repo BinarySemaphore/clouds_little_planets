@@ -41,5 +41,5 @@ struct CGUBO {
 	bool atmo_enable;
 	bool cloud_enable;
 	bool cloud_atmo_light_enable;
-	bool flat_world;
+	bool reserved_2;
 };

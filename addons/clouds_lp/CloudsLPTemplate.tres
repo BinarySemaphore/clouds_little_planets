@@ -4,8 +4,10 @@
 [ext_resource type="Resource" uid="uid://wfaboo082doh" path="res://addons/clouds_lp/profiles/earth.tres" id="2_e2t72"]
 [ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="3_gpnjx"]
 [ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_owya3"]
+[ext_resource type="RDShaderFile" uid="uid://cb200h5c71etn" path="res://addons/clouds_lp/shaders/atmo_compute_flat.glsl" id="5_gpnjx"]
 [ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="5_su436"]
 [ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="6_gqhol"]
+[ext_resource type="RDShaderFile" uid="uid://cyu4k4xd4ou3e" path="res://addons/clouds_lp/shaders/cloud_compute_flat.glsl" id="7_owya3"]
 [ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="7_uk7wl"]
 
 [resource]
@@ -18,8 +20,4 @@ needs_normal_roughness = false
 script = ExtResource("3_gpnjx")
 cloud_quality = ExtResource("1_cw3qd")
 profile = ExtResource("2_e2t72")
-shdr_downscaler_file = ExtResource("6_gqhol")
-shdr_clouds_file = ExtResource("5_su436")
-shdr_upscaler_file = ExtResource("7_uk7wl")
-shdr_atmo_file = ExtResource("4_owya3")
 metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"

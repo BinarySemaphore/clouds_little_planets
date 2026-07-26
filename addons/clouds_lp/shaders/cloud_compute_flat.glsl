@@ -1,6 +1,8 @@
 #[compute]
 #version 450
 
+#define FLAT_WORLD
+
 #include "./includes/struct_ubo_godot.glslinc"
 #include "./includes/struct_ubo_config.glslinc"
 #include "./includes/utils.glslinc"
