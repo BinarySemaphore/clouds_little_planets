@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://pq0qd2bfcmop"]
 
 [ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_t8otc"]
-[ext_resource type="Resource" uid="uid://br0bakw18oidv" path="res://earth_flat.tres" id="2_t8otc"]
+[ext_resource type="Resource" uid="uid://br0bakw18oidv" path="res://addons/clouds_lp/profiles/earth_flat.tres" id="2_t8otc"]
 [ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="3_xiq1t"]
 [ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_hm56r"]
 [ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="5_r5xd6"]
