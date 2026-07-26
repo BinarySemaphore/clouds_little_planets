@@ -58,7 +58,7 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 	float step_size = dist / float(samples - 1);
 	float atmo_radius = config.data.radius + config.data.atmo_alt;
 	if (config.data.flat_world) {
-		atmo_radius = 50.0 * config.data.cl_global_scale + config.data.atmo_alt;
+		atmo_radius = 100.0 * config.data.cl_global_scale + config.data.atmo_alt;
 	}
 	float travel_dist = 0.0;
 	float direct_light = 1.0;
@@ -138,17 +138,30 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 		// Primary
 		r1 = smoothstep(r_to_m_line * 0.25, 1.0, from_light);
 		r2 = 0.25 * clamp(abs(up_align) + 0.5, 0.0, 1.0)
-					// Positioning
-					* smoothstep(end_line * 0.5, r_to_m_line * 0.5, from_light);
+			// Positioning
+			* smoothstep(end_line * 0.5, r_to_m_line * 0.5, from_light);
 		// Mie scatter
 		// Primary
-		m1 = 0.5 * travel_dist * travel_dist / atmo_radius
-					* (1.0 - 1.0 * clamp(up_align, 0.0, 1.0))  // Upper cutoff
-					* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))  // Lower cutoff
-					// Positioning
-					* smoothstep(r_to_m_line, 0.0, from_light)
-					* smoothstep(end_line, r_to_m_line * 0.5, from_light);
+		if (config.data.flat_world) {
+			m1 = (1.0 - pow(abs(from_light), 0.25))
+				* clamp(travel_dist * 20.0 / atmo_radius, 0.0, 1.0)
+				// Cutoffs (upper/lower)
+				* (1.0 - clamp(up_align + 0.5, 0.0, 1.0))
+				* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))
+				// Positioning
+				* smoothstep(r_to_m_line, 0.0, from_light)
+				* smoothstep(end_line, r_to_m_line * 0.25, from_light);
+		} else {
+			m1 = 0.5 * clamp(travel_dist * travel_dist/ atmo_radius, 0.0, 1.0)
+				// Cutoffs (upper/lower)
+				* (1.0 - clamp(up_align, 0.0, 1.0))
+				* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))
+				// Positioning
+				* smoothstep(r_to_m_line, 0.0, from_light)
+				* smoothstep(end_line, r_to_m_line * 0.5, from_light);
+		}
 		// Solar
+		//m1 = 1.0 - pow(abs(from_light), 0.2);
 		m2 = eng_from_star * 10.0 * travel_dist / atmo_radius;
 
 		sample_color = config.data.color_star * eng_from_light;
@@ -381,8 +394,10 @@ void main() {
 		}
 		if (hit.y > 0.0 && hit.x <= depth_lim) {
 			start_pos = cam_pos + dir * hit.x;
-			hit.y = min(hit.y, 50.0 * config.data.cl_global_scale + config.data.atmo_alt);
-			max_travel_dist = min(depth_lim - hit.x, hit.y);
+			max_travel_dist = min(
+				min(depth_lim - hit.x, hit.y),
+				100.0 * config.data.cl_global_scale + config.data.atmo_alt
+			);
 			is_valid = true;
 		}
 	} else if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
