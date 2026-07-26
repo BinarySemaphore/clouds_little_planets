@@ -8,7 +8,6 @@
 [ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="6_00tp4"]
 [ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="7_77dp3"]
 [ext_resource type="Texture2D" uid="uid://b6pk64jgq1acs" path="res://test_assets/8k_earth_daymap.jpg" id="9_00tp4"]
-[ext_resource type="Script" uid="uid://dy8uqfck5fs0w" path="res://test_scripts/pos_signal.gd" id="10_00tp4"]
 [ext_resource type="Texture2D" uid="uid://bsuafcyywu1tg" path="res://test_assets/8k_earth_normal_map.png" id="10_5tkv4"]
 [ext_resource type="Texture2D" uid="uid://boy4uu3h1g3gn" path="res://test_assets/8k_earth_specular_map.png" id="11_0m0f1"]
 [ext_resource type="Script" uid="uid://bg4nd5edqx2j6" path="res://test_scripts/camera.gd" id="13_0m0f1"]
@@ -74,7 +73,6 @@ mesh = SubResource("SphereMesh_0m0f1")
 [node name="Sun" type="MeshInstance3D" parent="." unique_id=1153659447]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 1000)
 mesh = SubResource("SphereMesh_5tkv4")
-script = ExtResource("10_00tp4")
 
 [node name="OmniLight3D" type="OmniLight3D" parent="Sun" unique_id=932571324]
 omni_range = 2000.0
