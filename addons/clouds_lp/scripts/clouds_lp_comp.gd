@@ -2,7 +2,11 @@
 class_name CloudsLP
 extends CompositorEffect
 
-## 2^[code]scale_down_power[/code] (ex: 0: native, 1: half, 2: quarter, ...)
+## [code]Editor[/code]-only cloud rendering resolution down scaling ratio.[br]
+## Does not impact atmoshpere.[br]
+## [color=yellow]Warning:[/color] Major performance impact closer to
+## [code]Native[/code].[br]
+## [br]For more performance control, see [color=white]Cloud Quality[/color].
 @export_enum("Native", "Half", "Quarter", "Eighth", "Sixteenth", "Thirtysecond") var scale_down_power_editor: int = 3:
 	set(value):
 		scale_down_power_editor = value
@@ -11,7 +15,11 @@ extends CompositorEffect
 			_scaled_down = 1 << scale_down_power_editor
 			_longterm_uniforms_good = false
 			_mutex.unlock()
-## 2^[code]scale_down_power[/code] (ex: 0: native, 1: half, 2: quarter, ...)
+## Cloud rendering resolution down scaling ratio.[br]
+## Does not impact atmoshpere.[br]
+## [color=yellow]Warning:[/color] Major performance impact closer to
+## [code]Native[/code].[br]
+## [br]For more performance control, see [color=white]Cloud Quality[/color].
 @export_enum("Native", "Half", "Quarter", "Eighth", "Sixteenth", "Thirtysecond") var scale_down_power: int = 2:
 	set(value):
 		scale_down_power = value
@@ -51,7 +59,9 @@ extends CompositorEffect
 @export var max_distance := 0.0
 @export var position := Vector3.ZERO
 @export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath
-## Cloud Quality Profile.
+## Cloud Quality Profile.[br]
+## [color=yellow]Warning:[/color] Performance impacting.[br]
+## [br]See [color=white]Scale Down Power[/color] for more performance control.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
 		_mutex.lock()

@@ -10,8 +10,6 @@
 [ext_resource type="Script" uid="uid://bg4nd5edqx2j6" path="res://test_scripts/camera.gd" id="8_w1048"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_l8nfm"]
-sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
-ground_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
 
 [sub_resource type="Sky" id="Sky_56yhl"]
 sky_material = SubResource("ProceduralSkyMaterial_l8nfm")
