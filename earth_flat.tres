@@ -10,7 +10,7 @@
 
 [resource]
 script = ExtResource("7_ciiko")
-planet_radius = 0.0
+planet_radius = -0.01
 atmo_height = 10.0
 atmo_light_pen = 10.0
 atmo_density_falloff = 6.5

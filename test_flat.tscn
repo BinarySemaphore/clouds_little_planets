@@ -7,6 +7,7 @@
 [ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="5_r5xd6"]
 [ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="6_bwc7l"]
 [ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="7_6roj2"]
+[ext_resource type="Script" uid="uid://bg4nd5edqx2j6" path="res://test_scripts/camera.gd" id="8_w1048"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_l8nfm"]
 sky_horizon_color = Color(0.66224277, 0.6717428, 0.6867428, 1)
@@ -42,7 +43,11 @@ metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
 [sub_resource type="Compositor" id="Compositor_g0vck"]
 compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_huson")])
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_t8otc"]
+albedo_color = Color(0.071712695, 0.52902246, 0.12051017, 1)
+
 [sub_resource type="PlaneMesh" id="PlaneMesh_2ij8o"]
+material = SubResource("StandardMaterial3D_t8otc")
 size = Vector2(500, 500)
 
 [node name="Node3D" type="Node3D" unique_id=2128860581]
@@ -56,3 +61,7 @@ transform = Transform3D(1, 0, 0, 0, -0.73135376, 0.6819983, 0, -0.6819983, -0.73
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1009312384]
 mesh = SubResource("PlaneMesh_2ij8o")
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=1027534904]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+script = ExtResource("8_w1048")

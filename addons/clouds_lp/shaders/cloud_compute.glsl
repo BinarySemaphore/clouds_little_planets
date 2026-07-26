@@ -47,7 +47,7 @@ float alt_from_pos(vec3 pos) {
 
 vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_direct_light) {
 	if (dist <= 0.0) return vec4(0.0);
-	start *= rand_near_one(0.0001 * config.data.cl_global_scale);
+	start *= rand_near_one(0.0001);
 	float light_wrap = 0.05;
 	float atmo_light_wrap = light_wrap;
 	float star_fade = 1.0 - config.data.star_glow;
