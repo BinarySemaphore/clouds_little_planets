@@ -40,7 +40,7 @@ void main() {
 			start_pos = cam_pos + dir * hit.x;
 			max_travel_dist = min(
 				min(depth_lim - hit.x, hit.y),
-				100.0 * config.data.cl_global_scale + config.data.atmo_alt
+				FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt
 			);
 			is_valid = true;
 		}

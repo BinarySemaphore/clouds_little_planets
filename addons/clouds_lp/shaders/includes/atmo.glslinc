@@ -23,7 +23,7 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 
 	#ifdef FLAT_WORLD
 		vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
-		float atmo_radius = 100.0 * config.data.cl_global_scale + config.data.atmo_alt;
+		float atmo_radius = FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt;
 	#else
 		float atmo_radius = config.data.radius + config.data.atmo_alt;
 	#endif
@@ -90,7 +90,11 @@ vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_d
 			0.0, 1.0
 		);
 
-		total_density += density * step_size / config.data.cl_global_scale;
+		#ifdef FLAT_WORLD
+			total_density += density * step_size / config.data.atmo_alt;
+		#else
+			total_density += density * step_size;
+		#endif
 		total_density += (1.0 - density) * overhead_scatter;
 
 		eng_from_star = 20.0 * direct_light * smoothstep(star_fade, 1.0, path_light);

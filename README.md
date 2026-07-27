@@ -13,6 +13,8 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
     * [Configuring](#configuring)
     * [Saving Profiles](#saving-profiles)
     * [Script Integration](#script-integration)
+  * [Custom Modification](#custom-modification)
+    * [Shaders](#shaders)
 * [Test](#test)
   * [Example Project](#example-project)
 * [Thirdparty](#thirdparty)
@@ -25,6 +27,7 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
   - Planet and Quality profile resources
 - Radial or Flat world rendering
 - Multiple cloud varying layers
+- Rescaling
 - Time progression (WIP)
 - Wind (WIP)
 
@@ -93,6 +96,14 @@ Configuration is done in the compositor, ensure the __CloudsLP__ instance is exp
 _In Progress..._
 #### Saving Profiles
 #### Script Integration
+
+### Custom Modification
+#### Shaders
+Shaders are organized into shared `*.glslinc` include files to reduce code duplication.
+Most of the actual code exists in `atmo.glslinc`, `atmo_main.glslinc`, and `cloud.glslinc`.
+- __Warning__:
+   >Godot treats `*.glslinc` files as text substitutions. Changes to an include file do **not** automatically trigger reimport of the `*.glsl` shaders that include it. After modifying an include, manually reimport all affected `*.glsl` shaders before reloading or running the project, or the changes will not take effect.
+
 
 ## Test
 This addon repository is its own testable Godot project (Godot 4.6 | Forward+ rendering).

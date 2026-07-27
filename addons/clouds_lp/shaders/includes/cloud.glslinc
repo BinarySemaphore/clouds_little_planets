@@ -1,6 +1,6 @@
 vec2 lat_long_from_pos_to_uv(vec3 pos) {
 	#ifdef FLAT_WORLD
-		return vec2(pos.x, pos.z) / (100.0 * config.data.cl_global_scale);
+		return vec2(pos.x, pos.z) / (FLAT_WORLD_DEF_DIAMETER * config.data.cl_global_scale);
 	#else
 		vec3 norm_pos = normalize(pos);
 		float lat_angle = asin(-norm_pos.y / 1.0);
@@ -93,7 +93,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 	vec3 base = vec3(0.0, config.data.radius, 0.0);  // Used for flat_world
 
 	#ifdef FLAT_WORLD
-		float radius = 50.0 * config.data.cl_global_scale;
+		float radius = 0.5 * FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt;
 		float planet_occlusion_atten = 0.05;
 	#else
 		float radius = config.data.radius;
@@ -219,7 +219,7 @@ void main() {
 			start_pos = cam_pos + dir * hit.x;
 			max_travel_dist = min(
 				min(depth_lim - hit.x, hit.y),
-				100.0 * config.data.cl_global_scale + config.data.atmo_alt
+				FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt
 			);
 			is_valid = true;
 		}
