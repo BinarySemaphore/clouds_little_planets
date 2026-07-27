@@ -10,7 +10,7 @@ extends Resource
 @export var atmo_height := 2.0
 ## Light penetration.[br]
 ## Measured in distance from [code]atmo_height[/code].[br]
-## Lighting further down darkens instead of intensly scatters.
+## Lighting further down darkens instead of intensely scatters.
 @export var atmo_light_pen := 2.0
 ## Density falloff.[br]
 ## Larger values cause atmosphere to fade earlier.
@@ -38,7 +38,7 @@ extends Resource
 @export var cld_beers_factor := 6.0
 ## Cloud silverlining lighting.
 @export var cld_powder_factor := 6.5
-## Cloud desnity multiplier.
+## Cloud density multiplier.
 @export var cld_density_factor := 1.0
 @export_subgroup("Noise Adjust", "ns_adj")
 ## Density from noise multiplication falloff.[br]
