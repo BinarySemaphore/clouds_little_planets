@@ -18,6 +18,13 @@ void main() {
 	vec4 color = imageLoad(inout_image, uv);
 	// color = vec4(vec3(depth_lim), 1.0);
 
+	#ifdef FLAT_WORLD
+	// Depth past render far plane
+	if (depth_lim >= scene.data.z_far - 0.1) {
+		depth_lim = MAX_DIST;
+	}
+	#endif
+
 	bool is_valid = false;
 	vec2 hit;
 	float atmo_travel_dist = 0.0;

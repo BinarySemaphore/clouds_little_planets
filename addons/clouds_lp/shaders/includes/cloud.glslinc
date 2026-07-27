@@ -197,6 +197,13 @@ void main() {
 	float depth_lim = depth_planar / dot(dir, cam_forward);
 	vec4 color = vec4(0.0);
 
+	#ifdef FLAT_WORLD
+	// Depth past render far plane
+	if (depth_lim >= scene.data.z_far - 0.1) {
+		depth_lim = MAX_DIST;
+	}
+	#endif
+
 	bool is_valid = false;
 	vec2 hit;
 	vec3 start_pos = vec3(0.0);
