@@ -2,6 +2,9 @@
 class_name CloudsLP
 extends CompositorEffect
 
+## Print debug messages to log/output.[br]
+## [color=white]Note:[/color] Errors are still logged while debug is disabled.
+@export var debug_output := false
 ## [code]Editor[/code]-only cloud rendering resolution down scaling ratio.[br]
 ## Does not impact atmoshpere.[br]
 ## [color=yellow]Warning:[/color] Major performance impact closer to
@@ -65,7 +68,21 @@ extends CompositorEffect
 ## [color=white]Note:[/color] ignored for values <= 0.0.
 @export var max_distance := 0.0
 @export var position := Vector3.ZERO
-@export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath
+## [code]Light3D[/code] to drive lighting color and positioning.[br]
+## [color=white]Note:[/color] For non-directional lights, range and attenuation
+## are ignored.[br]
+## [br][color=yellow]Warning:[/color] The [code]Light3D[/code] should not be a
+## child of the compositor's subtree. Compositor scene awareness is limited,
+## so a relative path must be resolved to find the actual node instance. This
+## is done during initialization or anytime the [code]Light3D[/code]'s path
+## changes.
+@export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath:
+	set(value):
+		light_source = value
+		_light_source = null
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
 ## Cloud Quality Profile.[br]
 ## [color=yellow]Warning:[/color] Performance impacting.[br]
 ## [br]See [color=white]Scale Down Power[/color] for more performance control.
@@ -156,7 +173,7 @@ func _setup() -> void:
 
 
 func _cleanup(shaders := true, data := true) -> void:
-	print("Cleanup (shaders %s | data %s)" % [shaders, data])
+	_print_debug("Cleanup (shaders %s | data %s)" % [shaders, data])
 	
 	if shaders:
 		# Pipelines are auto cleared with corresponding shaders; but being explicit
@@ -221,31 +238,25 @@ func _cleanup(shaders := true, data := true) -> void:
 func _load_and_init() -> bool:
 	_cleanup(true, false)  # Cleanup shaders only
 	if light_source and not _light_source:
-		print("Resolving light source path (rel %s) from scene root" % light_source)
-		var light_source_name := light_source.get_name(light_source.get_name_count() - 1)
-		var scene_tree: SceneTree = Engine.get_main_loop()
-		if Engine.is_editor_hint():
-			_light_source = scene_tree.edited_scene_root.find_child(light_source_name)
-		else:
-			_light_source = scene_tree.root.find_child(light_source_name, true, false)
+		_find_light_instance()
 		if not _light_source:
-			push_error("Could not find light source \"%s\", make sure it's in the scene tree or reassign Light Source and Reload" % light_source_name)
-	print("Loading Resources (shaders recompiling)...")
+			_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
+	_print_debug("Loading Resources (shaders recompiling)...")
 	
 	if not profile:
-		push_error("Missing profile (check Profile)")
+		_push_error("Missing profile (check Profile)")
 		return false
 	
 	if cloud_enabled and profile.planet_has_clouds and not cloud_quality:
-		push_error("Missing cloud quality profile (check Cloud Quality)")
+		_push_error("Missing cloud quality profile (check Cloud Quality)")
 		return false
 	
 	if not (profile.ns_height and profile.ns_mask and profile.ns_large and profile.ns_medium and profile.ns_small and profile.ns_wisp):
-		push_error("Missing textures (check Profile > Clouds > Noise)")
+		_push_error("Missing textures (check Profile > Clouds > Noise)")
 		return false
 	
 	if not (shdr_downscaler_file and shdr_clouds_file and shdr_upscaler_file and shdr_atmo_file):
-		push_error("Missing shader files (check Shaders > * Files)")
+		_push_error("Missing shader files (check Shaders > * Files)")
 		return false
 	
 	var shader_scale_down_spirv := shdr_downscaler_file.get_spirv()
@@ -277,7 +288,7 @@ func _load_and_init() -> bool:
 	_pipeline_pass_3 = _rd.compute_pipeline_create(_shader_scale_up)
 	_pipeline_pass_4 = _rd.compute_pipeline_create(_shader_atmo)
 	
-	print("Ready")
+	_print_debug("Ready")
 	return _pipeline_pass_1.is_valid() and \
 			_pipeline_pass_2.is_valid() and \
 			_pipeline_pass_3.is_valid() and \
@@ -286,7 +297,7 @@ func _load_and_init() -> bool:
 
 func _alloc_longterm_data(size: Vector2i) -> void:
 	_cleanup(false, true)  # Cleanup data only
-	print("Allocating longterm data...")
+	_print_debug("Allocating longterm data...")
 	
 	if not _config_data or _config_data.size() != 224:
 		_config_data = PackedByteArray()
@@ -378,7 +389,7 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_depth_low = _rd.texture_create(scaled_depth_format, RDTextureView.new(), [scaled_depth_data])
 	
 	_longterm_uniforms_good = true
-	print("Ready")
+	_print_debug("Ready")
 
 
 func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -> void:
@@ -404,9 +415,9 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 	_mutex.lock()
 	if not _longterm_uniforms_good or _last_size.x != size.x or _last_size.y != size.y:
 		if not _longterm_uniforms_good:
-			print("Allocate triggered by stale uniforms")
+			_print_debug("Allocate triggered by stale uniforms")
 		if not _last_size.x != size.x or _last_size.y != size.y:
-			print("Allocate triggered by resolution change (last %s): %s" % [_last_size, size])
+			_print_debug("Allocate triggered by resolution change (last %s): %s" % [_last_size, size])
 		_alloc_longterm_data(size)
 	_mutex.unlock()
 	_last_size = size
@@ -563,7 +574,7 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 		if Engine.is_editor_hint():
 			_mutex.lock()
 			if _req_write_debug:
-				print("Try save...")
+				_print_debug("Try save...")
 				_req_write_debug = false
 				_debug_save_rd_texture.call_deferred(_clouds_high, size, "color")
 				_debug_save_rd_texture.call_deferred(_depth_high, size, "depth", Image.FORMAT_RH)
@@ -572,22 +583,22 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 
 func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
 	if not _rd:
-		push_error("No Render Device")
+		_push_error("No Render Device")
 		return
 	if not tex_rid.is_valid():
-		push_error("Invalid RID for image")
+		_push_error("Invalid RID for image")
 		return
 	var image_data := _rd.texture_get_data(tex_rid, 0)
 	if not image_data:
-		push_error("No image data for %s" % tex_rid)
+		_push_error("No image data for %s" % tex_rid)
 		return
 	var test_image := Image.create_from_data(size.x, size.y, false, format, image_data)
 	if not test_image:
-		push_error("No image found :(")
+		_push_error("No image found :(")
 		return
 	var filename := "user://%s.png" % fname
 	test_image.save_png(filename)
-	print("Saved to '%s'" % filename)
+	_print_debug("Saved to '%s'" % filename)
 
 
 func _update_config_data() -> void:
@@ -603,7 +614,8 @@ func _update_config_data() -> void:
 						   * (maxf(profile.planet_radius, 1.0) + profile.atmo_height) \
 						   + position
 	else:
-		light_position = Vector3.RIGHT * 1000.0 \
+		var default_dir := Vector3.UP if flat_world else Vector3.RIGHT
+		light_position = default_dir * 1000.0 \
 					   * (maxf(profile.planet_radius, 1.0) + profile.atmo_height) \
 					   + position
 	_config_data.encode_float(idx, light_position.x); idx += 4
@@ -692,3 +704,60 @@ func _update_config_data() -> void:
 		_rd.buffer_update(_config_data_rid, 0, _config_data.size(), _config_data)
 	else:
 		_config_data_rid = _rd.uniform_buffer_create(_config_data.size(), _config_data)
+
+
+func _find_light_instance() -> void:
+	if not light_source: return
+	
+	_print_debug("Attempt to resolve light source from compositor relative path: \"%s\"" % light_source)
+	var scene_tree: SceneTree = Engine.get_main_loop()
+	_light_source = null
+	
+	# Resolve unknown rel NodePath to absolute
+	# Compositor NodePath is unaware of self in scene tree, but can walk back
+	var skip: Array[StringName] = [".", ".."]
+	var cur_name: StringName
+	var cur_name_index := 0
+	for i in range(light_source.get_name_count()):
+		cur_name = light_source.get_name(i)
+		if cur_name not in skip:
+			cur_name_index = i
+			break
+	if not cur_name: return
+	
+	# Search for parent
+	var parents: Array[Node]
+	if Engine.is_editor_hint():
+		parents = scene_tree.edited_scene_root.find_children(cur_name)
+	else:
+		parents = scene_tree.root.find_children(cur_name, "", true, false)
+	if not parents:
+		_push_error("Failed to locate Light Source parent by relative path")
+		return
+	if len(parents) > 1:
+		_push_warn("Potential for incorrect Light Source from relative path, suggest giving the Light's parent \"%s\" a unique name" % cur_name)
+	
+	# Find light from parent using remaining NodePath
+	if cur_name_index < light_source.get_name_count() - 1:
+		for parent in parents:
+			_light_source = parent.get_node_or_null(light_source.slice(cur_name_index + 1))
+			if _light_source:
+				break  # Correct source found
+	else:
+		if len(parents) > 1:
+			_push_error("Failed to locate unique Light Source by relative path")
+			return
+		_light_source = parents[0]
+
+
+func _print_debug(msg: String) -> void:
+	if not debug_output: return
+	print("[CloudsLP] %s" % msg)
+
+
+func _push_warn(msg: String) -> void:
+	push_warning("[CloudsLP] %s" % msg)
+
+
+func _push_error(msg: String) -> void:
+	push_error("[CloudsLP] %s" % msg)

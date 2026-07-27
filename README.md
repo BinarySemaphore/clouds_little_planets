@@ -49,10 +49,10 @@ _Release Pending..._
 1) Click `Install`
 1) From the menu-bar click `Project` > `Project Settings`
 1) Select `Plugins` tab in the "Project Settings" window
-1) Enable `CloudsLP`
+1) Enable "__CloudsLP__"
 
 ## Guide
-Clouds Little Planets (_CloudsLP_) is a compositor.
+Clouds for Little Planets (__CloudsLP__) is a compositor.
 Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
 
 ### Video Guide
@@ -81,15 +81,14 @@ _In Progress..._
 1) Click on the effect in the effects list
    - This expands to show all configurations (where everything lives)
 #### Configuring
-Configuration is done in the compositor, ensure the `CloudsLP` instance is expanded (See [Setup](#setup) for details).
+Configuration is done in the compositor, ensure the __CloudsLP__ instance is expanded (See [Setup](#setup) for details).
 - Note:
-  > For any profiles and other pre-loaded resources (like gradients and noise), just like with `CloudsLPTemplate.tres`,
-  > it's recommended to save or make unique prior to making any changes.
-  > You can always create new profiles or resources at anytime as well.
-  > Nearly all parameters have hover-over hints explaining their function.
+  > For any profiles and other pre-loaded resources (like gradients and noise), just like with `CloudsLPTemplate.tres`, it's recommended to save or make unique prior to making any changes. You can always create new profiles or resources at anytime as well. Nearly all parameters have hover-over hints explaining their function.
 
 - `Flat World`: Force flat world (Y axis is altitude). `Profile.Planet.Radius` will be used as sea-level.
-- `Light Source`: _Light3D_ node should have a unique name in scene
+- `Light Source`: _NodePath_ a driving `Light3D` for color and positioning.
+  - Warning:
+     > Godot's `CompositorEffect` is not attached to the scene tree and cannot directly resolve a relative _NodePath_. __CloudsLP__ reconstructs the lookup during initialization by locating the first named ancestor in the active scene, then resolves with the remainder of the path. The resulting `Light3D` is cached for runtime use. Restrictions from this limitation are documented directly in the parameter. Warnings and errors are given to help resolve any problems.
 
 _In Progress..._
 #### Saving Profiles
@@ -107,8 +106,8 @@ This addon repository is its own testable Godot project (Godot 4.6 | Forward+ re
 1) Open the project
 1) Open `test.tscn` scene
    - You should see Earth with an atmosphere and low-res clouds
-   - In `WorldEnvironment` > `Compositor` > `Compositor Effects` > `0` will be `CloudsLP`
-   - `CloudsLP` has all the possible configurations for both atmosphere and cloud generation
+   - In `WorldEnvironment` > `Compositor` > `Compositor Effects` > `0` will be __CloudsLP__
+   - __CloudsLP__ has all the possible configurations for both atmosphere and cloud generation
    - Any `Profile` should expand for specific configuration
 1) Running the scene will use higher-res clouds and provides a controllable camera
    - Camera Controls:
