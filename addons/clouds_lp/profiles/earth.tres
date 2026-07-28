@@ -15,6 +15,7 @@ atmo_light_pen = 10.0
 atmo_density_falloff = 6.5
 cld_light_scatter = 1.5
 cld_density_factor = 1.5
+anim_mask_rate = Vector2(0.05, 0)
 ns_adj_threshold = Vector2(0.5, 0.7)
 ns_adj_wisp_factor = 0.3
 ns_adj_scale = Vector4(8, 2, 2, 2)
