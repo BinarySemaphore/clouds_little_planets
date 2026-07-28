@@ -28,7 +28,7 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
 - Radial or Flat world rendering
 - Multiple cloud varying layers
 - Rescaling
-- Time progression (WIP)
+- Time progression
 - Wind (WIP)
 
 ### Screenshots

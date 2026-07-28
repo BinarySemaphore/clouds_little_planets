@@ -8,6 +8,7 @@ extends Camera3D
 ## Values less than [color=white]zero[/color] disable minimum.
 @export var min_altitude := -1.0
 
+
 func _process(delta: float) -> void:
 	var actual_move_speed := move_speed
 	var glb_move := Vector3.ZERO

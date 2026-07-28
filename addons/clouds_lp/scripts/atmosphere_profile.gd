@@ -2,6 +2,7 @@ class_name AtmosphereProfile
 extends Resource
 
 @export_group("Planet", "planet")
+## For [code]Flat World[/code] this is sea level.
 @export var planet_radius := 50.0
 @export var planet_has_atmosphere := true
 @export var planet_has_clouds := true
@@ -25,7 +26,8 @@ extends Resource
 ## Colors absorbed or unscattered during Mie scattering.[br]
 ## Sunset colors subtracted.
 @export var atmo_color_tangent := Color(1.0, 0.776, 0.212)
-@export_group("Clouds", "cld")
+@export_group("Clouds")
+@export_subgroup("Style", "cld")
 ## Cloud base color (when fully illuminated).
 @export var cld_color := Color.WHITE
 ## Cloud light penetration.[br]
@@ -40,6 +42,18 @@ extends Resource
 @export var cld_powder_factor := 6.5
 ## Cloud density multiplier.
 @export var cld_density_factor := 1.0
+@export_subgroup("Animation", "anim")
+@export var anim_enabled := true
+## Animation pause for [member SceneTree.paused] or ignore.
+@export var anim_pausable := true
+## Reverse animation.
+@export var anim_reverse := false
+## Noise progression for details (noise medium, small, and wisp).
+@export var anim_detail_rate := 0.5
+## Noise progression for position (noise large).
+@export var anim_position_rate := Vector3.ONE
+## Mask progression.
+@export var anim_mask_rate := Vector2(1.0, 0.0)
 @export_subgroup("Noise Adjust", "ns_adj")
 ## Density from noise multiplication falloff.[br]
 ## [code]0.0[/code] is maximum influence from medium and small.[br]

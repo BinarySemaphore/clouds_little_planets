@@ -42,16 +42,23 @@ float cloud_density_at_pos(vec3 pos) {
 	float s_scale = config.data.cl_scale.z * modified_global_scale;
 	float curl_scale = config.data.cl_wisp_scale * modified_global_scale;
 
+	// Not using modified_global_scale as layer scaling shouldn't mess with timing (to keep proportionality)
+	float anim_time = config.data.cl_anim_time * config.data.cl_global_scale * 0.0001;
+	vec3 d_l_anim_offset = config.data.cl_anim_pos_rate * anim_time;
+	vec3 detail_anim_offset = vec3(config.data.cl_anim_detail_rate) * anim_time;
+
 	vec2 latlong_pos = lat_long_from_pos_to_uv(pos) + config.data.cl_mask_offset + vec2(5.0) * alt_mask.b;
+	vec2 latlong_anim_offset = config.data.cl_anim_mask_rate * config.data.cl_anim_time * 0.00001;
 	float d_xl = smoothstep(config.data.cl_threshold.x, config.data.cl_threshold.y,
-		texture(noise_mask, latlong_pos / g_scale_sq).r);
+		texture(noise_mask, latlong_pos / g_scale_sq + latlong_anim_offset).r);
 	
 	float mask_and_alt_density = alt_mask.r * d_xl;
 	pos += config.data.cl_offset;
 
 	float d_l = smoothstep(config.data.cl_threshold.x, config.data.cl_threshold.y,
-		texture(noise_large, pos / l_scale)).r;
-	
+		texture(noise_large, (pos + d_l_anim_offset) / l_scale)).r;
+
+	pos += detail_anim_offset;
 	float wisp = clamp(1.0 - mask_and_alt_density * d_l * 2.0, 0.0, 1.0) * modified_global_scale * config.data.cl_wisp;
 	pos += (texture(noise_wisp, pos / curl_scale).xyz * 2.0 - 1.0) * wisp;
 

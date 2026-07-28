@@ -27,6 +27,11 @@ struct CGUBO {
 	vec2 cl_mask_offset;
 	float cl_light_scatter;
 	float cl_wisp_scale;
+	vec3 cl_anim_pos_rate;
+	float cl_anim_detail_rate;
+	vec2 cl_anim_mask_rate;
+	float cl_anim_time;
+	float reserved_1;
 
 	// Atmo
 	vec3 rayleigh_coefs;
@@ -35,11 +40,11 @@ struct CGUBO {
 	float star_glow;
 	vec3 color_star;
 	float density_falloff;
-	vec3 reserved_1;
+	vec3 reserved_2;
 	float refract_bend;
 
 	bool atmo_enable;
 	bool cloud_enable;
 	bool cloud_atmo_light_enable;
-	bool reserved_2;
+	float reserved_3;
 };

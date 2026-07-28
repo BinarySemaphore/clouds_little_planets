@@ -56,6 +56,11 @@ extends CompositorEffect
 ## Force disable cloud atmospheric lighting.[br]
 ## Overrides [code]Profile[/code].
 @export var cloud_atmo_light_enabled := true
+@export var cloud_animation_reset := false:
+	set(value):
+		cloud_animation_reset = false
+		if value:
+			_anim_time = 0.0
 ## Force flat world (Y axis is altitude).[br]
 ## [code]Profile.Planet.Radius[/code] will be used as sea-level.
 @export var flat_world := false:
@@ -139,6 +144,7 @@ var _req_write_debug := false
 var _reload_shaders := false
 var _longterm_uniforms_good := false
 var _scaled_down := 1
+var _anim_time := 0.0
 var _mutex := Mutex.new()
 var _light_source: Light3D
 var _last_size: Vector2i
@@ -299,9 +305,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_cleanup(false, true)  # Cleanup data only
 	_print_debug("Allocating longterm data...")
 	
-	if not _config_data or _config_data.size() != 224:
+	if not _config_data or _config_data.size() != 256:
 		_config_data = PackedByteArray()
-		_config_data.resize(224)
+		_config_data.resize(256)
 	
 	var sampler_linear_state := RDSamplerState.new()
 	sampler_linear_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
@@ -605,6 +611,10 @@ func _update_config_data() -> void:
 	var idx := 0
 	var linear_color: Color
 	
+	if profile.anim_enabled:
+		if not profile.anim_pausable or not (Engine.get_main_loop() as SceneTree).paused:
+			_anim_time += -1.0 if profile.anim_reverse else 1.0
+	
 	var light_position: Vector3
 	if _light_source:
 		if _light_source is not DirectionalLight3D:
@@ -666,6 +676,16 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, profile.ns_adj_mask_offset.y); idx += 4
 	_config_data.encode_float(idx, profile.cld_light_scatter); idx += 4
 	_config_data.encode_float(idx, profile.ns_adj_scale.w); idx += 4
+	
+	_config_data.encode_float(idx, profile.anim_position_rate.x); idx += 4
+	_config_data.encode_float(idx, profile.anim_position_rate.y); idx += 4
+	_config_data.encode_float(idx, profile.anim_position_rate.z); idx += 4
+	_config_data.encode_float(idx, profile.anim_detail_rate); idx += 4
+	
+	_config_data.encode_float(idx, profile.anim_mask_rate.x); idx += 4
+	_config_data.encode_float(idx, profile.anim_mask_rate.y); idx += 4
+	_config_data.encode_float(idx, _anim_time); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
 	
 	linear_color = profile.atmo_color_direct.srgb_to_linear()
 	linear_color = Color.WHITE - linear_color  # Convert to Rayleigh
