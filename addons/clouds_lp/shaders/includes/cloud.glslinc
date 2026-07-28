@@ -107,6 +107,10 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 		float planet_occlusion_atten = 0.05 * config.data.radius;
 	#endif
 
+	if (config.data.cloud_atmo_light_enable) {
+		color_atmo = color_through_atmo(start, dir, max_travel_dist, 3, true);
+	}
+
 	float filter_threshold = 0.0005;
 	float light_pen = config.data.cl_light_pen * config.data.cl_global_scale;
 	for (int i = 0; i < config.data.cl_steps; i++) {
@@ -119,9 +123,6 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 
 		pos = start + dir * travel_dist;
 		density = clamp(cloud_density_at_pos(pos) * config.data.cl_density_scalar, 0.0, 1.0);
-		if (config.data.cloud_atmo_light_enable) {
-			color_atmo = color_through_atmo(start, dir, travel_dist, 5, true);
-		}
 
 		if (density > filter_threshold) {
 			vec3 up_normal = normalize(pos - config.data.pos);
@@ -141,6 +142,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 				planet_hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius);
 			#endif
 			float dist_atmo = hit.y;
+			float flight_through_atmo = clamp(travel_dist / (radius + config.data.atmo_alt), 0.0, 1.0);
 			if (planet_hit.y < planet_occlusion_atten) {
 				for (int j = 1; j <= 5; j++) {
 					l_pos = pos + l_dir * light_pen * float(j);
@@ -148,8 +150,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 				}
 				scatter_lumin = 1.0 - clamp(scatter_lumin / config.data.cl_light_scatter, 0.0, 1.0);
 				// Normalize flight distance by quarter of total atmo radius
-				float flight_through_atmo = clamp(dist_atmo * 5.0 / (radius + config.data.atmo_alt), 0.0, 1.0);
-				scatter_lumin *= 1.0 - flight_through_atmo;
+				scatter_lumin *= 1.0 - clamp(dist_atmo / (radius + config.data.atmo_alt), 0.0, 1.0);
 			} else {
 				dist_atmo = planet_hit.x;
 				scatter_lumin = 0.0;
@@ -157,9 +158,9 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 			if (config.data.cloud_atmo_light_enable) {
 				// Get color from star in sky, sky towards star (sans star), and overhead sky
 				// Should add up to 1.0 when combined (so these are percents from each);
-				color_atmo_applied = color_through_atmo(pos, l_dir, dist_atmo, 4, true).rgb * 0.99;
+				color_atmo_applied = color_through_atmo(pos, l_dir, dist_atmo, 3, true).rgb * 0.99;
 				color_atmo_applied += color_through_atmo(pos, l_dir, dist_atmo, 1, false).rgb * 0.002;
-				color_atmo_applied *= 0.5;
+				//color_atmo_applied *= 0.5;
 			} else {
 				color_atmo_applied = color_ambient;
 			}
@@ -170,9 +171,10 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 			color_sample.rgb = mix(color_sample.rgb, scatter_color, scatter_lumin);
 			color_sample.rgb = clamp(color_sample.rgb, color_low, config.data.cl_color);
 
-			color_sample.rgb = mix(color_sample.rgb, (color_sample.rgb + color_atmo.rgb * 3.0) * 0.5, color_atmo.a);
+			color_sample.rgb = mix(color_sample.rgb, (color_sample.rgb + color_atmo.rgb) * 0.5, flight_through_atmo);
 
 			color.rgb = mix(color.rgb, color_sample.rgb, (1.0 - color.a) * color_sample.a);
+			// color.rgb = color_atmo.rgb;
 			color.a = mix(color.a, 1.0, color_sample.a);
 		}
 		
