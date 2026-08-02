@@ -87,14 +87,14 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 	float scatter_lumin;
 	vec3 pos = start;
 	vec3 l_pos;
-	vec3 l_dir;
+	vec3 l_dir = normalize(config.data.light_pos - start);
 	vec4 color_sample;
 	vec4 color = vec4(0.0);
 
 	vec3 color_low = vec3(0.0);
 	vec3 color_ambient = vec3(0.005);
-	vec4 color_atmo = vec4(0.0);
-	vec3 color_atmo_applied;
+	vec4 color_atmo_backlight = vec4(color_ambient, 0.0);
+	vec3 color_atmo_scatter;
 
 	vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
 	vec3 base = vec3(0.0, config.data.radius, 0.0);  // Used for flat_world
@@ -108,7 +108,10 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 	#endif
 
 	if (config.data.cloud_atmo_light_enable) {
-		color_atmo = color_through_atmo(start, dir, max_travel_dist, 3, true);
+		// vec2 exit = sphere_intersect(start, dir, config.data.pos, config.data.radius + config.data.atmo_alt);
+		// color_atmo_backlight = atmo_color(start + dir * exit.x, dir, min(exit.y, config.data.radius + config.data.atmo_alt), 3, false);
+		color_atmo_backlight = atmo_color(start, dir, config.data.atmo_alt, 3, false);
+		// color_atmo_backlight = atmo_color(start, dir, max_travel_dist, 3, false);
 	}
 
 	float filter_threshold = 0.0005;
@@ -125,12 +128,10 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 		density = clamp(cloud_density_at_pos(pos) * config.data.cl_density_scalar, 0.0, 1.0);
 
 		if (density > filter_threshold) {
-			vec3 up_normal = normalize(pos - config.data.pos);
-
 			color_sample.a = clamp(density, 0.0, 1.0);
 
 			scatter_lumin = 0.0;
-			l_dir = normalize(config.data.light_pos - pos);
+			//l_dir = normalize(config.data.light_pos - pos);
 			vec2 hit;
 			vec2 planet_hit;
 			#ifdef FLAT_WORLD
@@ -141,40 +142,51 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 				hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius + config.data.atmo_alt);
 				planet_hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius);
 			#endif
-			float dist_atmo = hit.y;
-			float flight_through_atmo = clamp(travel_dist / (radius + config.data.atmo_alt), 0.0, 1.0);
+			float atmo_dist_exit = hit.y;
+			float atmo_light_atten = atmo_approx_attenuation(atmo_dist_exit * 0.5);
+			float atmo_atten = atmo_approx_attenuation(travel_dist);
 			if (planet_hit.y < planet_occlusion_atten) {
 				for (int j = 1; j <= 5; j++) {
 					l_pos = pos + l_dir * light_pen * float(j);
 					scatter_lumin += cloud_density_at_pos(l_pos) * config.data.cl_density_scalar;
 				}
 				scatter_lumin = 1.0 - clamp(scatter_lumin / config.data.cl_light_scatter, 0.0, 1.0);
-				// Normalize flight distance by quarter of total atmo radius
-				scatter_lumin *= 1.0 - clamp(dist_atmo / (radius + config.data.atmo_alt), 0.0, 1.0);
+				if (config.data.cloud_atmo_light_enable) {
+					// Normalize flight distance by quarter of total atmo radius
+					scatter_lumin *= atmo_light_atten;
+				}
 			} else {
-				dist_atmo = planet_hit.x;
+				atmo_dist_exit = planet_hit.x;
 				scatter_lumin = 0.0;
 			}
+			// scatter_lumin = 1.0;
 			if (config.data.cloud_atmo_light_enable) {
 				// Get color from star in sky, sky towards star (sans star), and overhead sky
 				// Should add up to 1.0 when combined (so these are percents from each);
-				color_atmo_applied = color_through_atmo(pos, l_dir, dist_atmo, 3, true).rgb * 0.99;
-				color_atmo_applied += color_through_atmo(pos, l_dir, dist_atmo, 1, false).rgb * 0.002;
-				//color_atmo_applied *= 0.5;
+				color_atmo_scatter = atmo_color(pos, l_dir, atmo_dist_exit, 3, false).rgb * 0.99;
+				// color_atmo_scatter += atmo_color(pos, -l_dir, atmo_dist_exit, 3, false).rgb * 0.49;
+				color_atmo_scatter += atmo_color(pos, l_dir, atmo_dist_exit, 2, true).rgb * 0.01;
+				color_atmo_scatter *= atmo_light_atten;
 			} else {
-				color_atmo_applied = color_ambient;
+				color_atmo_scatter = color_ambient;
 			}
 
-			color_sample.rgb = mix(color_atmo_applied * 0.2, color_atmo_applied,
+			// color_sample.rgb = mix(color_atmo_backlight.rgb * 0.2, config.data.cl_color,
+			// 	powder_beers_lumin(density, config.data.cl_beers, config.data.cl_powder));
+			// color_sample.rgb = mix(color_atmo_scatter, color_sample.rgb, scatter_lumin);
+			color_sample.rgb = mix(color_atmo_scatter * 0.2, color_atmo_scatter,
 				powder_beers_lumin(density, config.data.cl_beers, config.data.cl_powder));
-			vec3 scatter_color = mix(color_atmo_applied, config.data.cl_color, scatter_lumin * 1.0);
+			vec3 scatter_color = mix(color_atmo_scatter, config.data.cl_color, scatter_lumin);
 			color_sample.rgb = mix(color_sample.rgb, scatter_color, scatter_lumin);
 			color_sample.rgb = clamp(color_sample.rgb, color_low, config.data.cl_color);
 
-			color_sample.rgb = mix(color_sample.rgb, (color_sample.rgb + color_atmo.rgb) * 0.5, flight_through_atmo);
+			// Fade to atmo color by dist
+			if (config.data.cloud_atmo_light_enable) {
+				color_sample.rgb = mix((color_sample.rgb + color_atmo_backlight.rgb) * 0.5, color_sample.rgb, atmo_atten);
+			}
 
 			color.rgb = mix(color.rgb, color_sample.rgb, (1.0 - color.a) * color_sample.a);
-			// color.rgb = color_atmo.rgb;
+			// color.rgb = color_atmo_backlight.rgb;
 			color.a = mix(color.a, 1.0, color_sample.a);
 		}
 		
@@ -276,7 +288,7 @@ void main() {
 		}
 
 		// if (config.data.atmo_enable) {
-		// 	vec4 atmo_color = color_through_atmo(start_pos, dir, max_travel_dist, 10, false);
+		// 	vec4 atmo_color = atmo_color(start_pos, dir, max_travel_dist, 10, true);
 		// 	//atmo_color *= 1.0 - 0.6 * smoothstep(0.0, 5.0, hit.x);//clamp(hit.x, 0.0, 0.5);
 		// 	if (color.a < 1.0) {
 		// 		color.rgb = mix(color.rgb, atmo_color.rgb, (1.0 - color.a) * atmo_color.a);

@@ -53,7 +53,7 @@ environment = SubResource("Environment_pnil2")
 compositor = SubResource("Compositor_g0vck")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1517354875]
-transform = Transform3D(1, 0, 0, 0, -0.64278764, 0.76604444, 0, -0.76604444, -0.64278764, 0, 0, 0)
+transform = Transform3D(0.99997586, -0.0014538121, 0.006753021, -0.0054023536, -0.7738212, 0.6333808, 0.0043048155, -0.63340217, -0.7738106, 0, 0, 0)
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1009312384]
 mesh = SubResource("PlaneMesh_2ij8o")

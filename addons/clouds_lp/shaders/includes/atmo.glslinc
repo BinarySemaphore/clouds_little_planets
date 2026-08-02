@@ -1,8 +1,3 @@
-float atmo_density(float altitude) {
-	float alt_normal = altitude / config.data.atmo_alt;
-	return clamp(exp(-config.data.density_falloff * alt_normal), 0.0, 1.0);
-}
-
 float alt_from_pos(vec3 pos) {
 	vec3 rel_pos = pos - config.data.pos;
 	#ifdef FLAT_WORLD
@@ -12,161 +7,136 @@ float alt_from_pos(vec3 pos) {
 	#endif
 }
 
-vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_star) {
+vec3 planet_norm_from_pos(vec3 pos) {
+	#ifdef FLAT_WORLD
+		return vec3(0.0, 1.0, 0.0);
+	#else
+		return normalize(pos - config.data.pos);
+	#endif
+}
+
+float atmo_density(float alt_normal) {
+	return clamp(exp(-config.data.atmo_density_falloff * alt_normal), 0.0, 1.0);
+}
+
+float atmo_approx_attenuation(float dist) {
+	return 1.0 - clamp(dist * 1.5 / (config.data.radius + config.data.atmo_alt), 0.0, 1.0);
+}
+
+float atmo_approx_lighting(float density, float exit_dist) {
+	//if (exit_dist > config.data.radius) return 0.0;
+	float atten = atmo_approx_attenuation(exit_dist);
+	return atten;
+}
+
+vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 	if (dist <= 0.0) return vec4(0.0);
-	start *= rand_near_one(0.001);
-	float light_wrap = 0.05;
-	float atmo_light_wrap = light_wrap;
-	float star_fade = 1.0 - config.data.star_glow;
 
 	vec4 color = vec4(0.0);
-
-	#ifdef FLAT_WORLD
-		vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
-		float atmo_radius = FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt;
-	#else
-		float atmo_radius = config.data.radius + config.data.atmo_alt;
-	#endif
-
-	float step_size = dist / float(samples - 1);
-	float travel_dist = 0.0;
-	float direct_light = 1.0;
-	float total_density = 0.0;
+	vec3 up = vec3(0.0, 1.0, 0.0);
+	vec3 to_light = normalize(config.data.light_pos - start);
 	float start_altitude = alt_from_pos(start);
-	float r_to_m_line = 0.6;
-	float end_line = -0.3;
+	float step_size = dist / float(samples - 1);
+	float travel_dist = step_size;
+	float total_density = 0.0;
+	float star_fade = 1.0 - config.data.atmo_star_glow;
 
-	// Direct light planet occlusion
-	vec2 hit_planet;
-	// if(no_direct_light) {
-	// 	direct_light = 0.0;
-	// } else {
-	// 	float wrap_lim = light_wrap * config.data.radius;
-	// 	#ifdef FLAT_WORLD
-	// 		wrap_lim = light_wrap;
-	// 		hit_planet = vec2(0.0);
-	// 		hit_planet.y = plane_intersect(start, dir, up * config.data.radius, up);
-	// 	#else
-	// 		hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
-	// 	#endif
-	// 	if (hit_planet.y > 0.0) {
-	// 		direct_light = 1.0 - smoothstep(0.0, wrap_lim, hit_planet.y);
-	// 	}
-	// }
-	
-	vec3 pos, rel_pos, planet_norm, to_light, sample_color;
-	vec2 hit_atmo;
-	float total_dist, altitude, altitude_normal, density, eng_from_light,
-		eng_from_star, from_light, path_light, up_align, overhead_scatter,
-		r1, r2, m1, m2;
-	for (int i = 0; i < samples; i++) {
-		pos = start + travel_dist * dir;// * rand_near_one(0.15);
-		rel_pos = pos - config.data.pos;
+	float star_direct = 1.0;
+	vec2 hit_planet = vec2(0.0);
+	#ifdef FLAT_WORLD
+		hit_planet.y = plane_intersect(start, dir, up * config.data.radius, up);
+	#else
+		hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
+	#endif
+	if (hit_planet.y > 0.0) {
+		star_direct = 0.0;
+	}
+
+	vec3 pos, planet_norm, sample_color;
+	vec2 exit_atmo;
+	float altitude, altitude_norm, exit_dist, overhead_scatter, density;
+	float from_light, path_light, up_align;
+	float rel_star_direct, eng_from_star, eng_from_light;
+	float r1, r2, m1, m2;
+	for(int i = 1; i < samples; i++) {
+		pos = start + dir * travel_dist;
+		altitude = alt_from_pos(pos);
+		altitude_norm = altitude / config.data.atmo_alt;
+
 		#ifdef FLAT_WORLD
-			altitude = rel_pos.y - config.data.radius;
+			exit_atmo.y = plane_intersect(pos, to_light, up * (config.data.radius + config.data.atmo_alt), up);
 		#else
-			altitude = length(rel_pos) - config.data.radius;
+			exit_atmo = sphere_intersect(pos, to_light, config.data.pos, config.data.radius);
 		#endif
-		if (altitude < -1.0) {
-			travel_dist += step_size;
-			continue;
-		}
-		altitude_normal = altitude / config.data.atmo_alt;
-		to_light = normalize(config.data.light_pos - pos);
-		density = exp(-altitude_normal * config.data.density_falloff);
+		exit_dist = exit_atmo.y * rand_near_one(0.2);
 
-		vec2 l_hit = sphere_intersect(pos, to_light, config.data.pos, atmo_radius);
-		direct_light = 1.0;
-		float wrap_lim = light_wrap * config.data.radius;
+		rel_star_direct = 1.0;
+		vec2 hit_planet = vec2(0.0);
 		#ifdef FLAT_WORLD
-			wrap_lim = light_wrap;
-			hit_planet = vec2(0.0);
 			hit_planet.y = plane_intersect(pos, to_light, up * config.data.radius, up);
 		#else
 			hit_planet = sphere_intersect(pos, to_light, config.data.pos, config.data.radius);
 		#endif
 		if (hit_planet.y > 0.0) {
-			direct_light = 1.0 - smoothstep(0.0, wrap_lim, hit_planet.y);
+			rel_star_direct = atmo_approx_lighting(density, hit_planet.y * config.data.atmo_alt);
 		}
 
-		#ifdef FLAT_WORLD
-			planet_norm = up;
-		#else
-			planet_norm = normalize(rel_pos);
-		#endif
+		planet_norm = planet_norm_from_pos(pos);
 		from_light = dot(planet_norm, to_light);
 		path_light = dot(dir, to_light);
 		up_align = dot(dir, planet_norm);
+
 		overhead_scatter = clamp(
-			0.5 * clamp(from_light, 0.0, 1.0)  // Positioning
-			* clamp(up_align + 0.3, 0.0, 1.0)  // Apply up and horizon
-			* smoothstep(config.data.atmo_alt * 1.5 / config.data.density_falloff, 0.0, start_altitude),  // Primary driven by camera altitude
+			clamp(from_light, 0.0, 1.0) *  // Positioning
+			clamp(up_align + 0.3, 0.0, 1.0) *  // Apply up and horizon
+			smoothstep(config.data.atmo_alt * 1.5 / config.data.atmo_density_falloff, 0.0, start_altitude),  // Primary driven by camera altitude
 			0.0, 1.0
 		);
 
-		#ifdef FLAT_WORLD
-			total_density += density * step_size / config.data.atmo_alt;
-		#else
-			total_density += density * step_size;
-		#endif
-		total_density += (1.0 - density) * overhead_scatter;
+		density = atmo_density(altitude_norm);
+		density += (1.0 - density) * overhead_scatter * config.data.atmo_overhead_scatter;
+		total_density += density * step_size * config.data.atmo_density;
 
-		if (no_star) {
+		if (!solar) {
 			eng_from_star = 0.0;
 		} else {
-			eng_from_star = 20.0 * direct_light * smoothstep(star_fade, 1.0, path_light);
+			eng_from_star = 20.0 * smoothstep(star_fade, 1.0, path_light) * star_direct;
 		}
-		eng_from_light = direct_light * 1.0 * clamp(1.0 - l_hit.y / atmo_radius, 0.0, 1.0) + eng_from_star;
-		// eng_from_light =
-		// 	clamp(from_light + atmo_light_wrap, 0.0, 1.0)
-		// 	+ eng_from_star;
-		if (altitude < config.data.atmo_alt - config.data.light_pen) {
-			float drown_out = smoothstep(0.0, config.data.light_pen, config.data.atmo_alt - config.data.light_pen - altitude);
-			eng_from_light *= -1.0 * drown_out;
-			eng_from_star *= -1.0 * drown_out;
-		}
-
-		float total_travel_dist = travel_dist + l_hit.y;
-		// Reyleigh scatter
-		// Primary
-		r1 = smoothstep(r_to_m_line * 0.25, 1.0, from_light);
-		//
-		r2 = 0.25 * clamp(abs(up_align) + 0.5, 0.0, 1.0)
-			// Positioning
-			* smoothstep(end_line * 0.5, r_to_m_line * 0.5, from_light);
-		// Mie scatter
-		// Primary
 		#ifdef FLAT_WORLD
-			m1 = (1.0 - pow(abs(from_light), 0.25))
-				* clamp(total_travel_dist * 20.0 / atmo_radius, 0.0, 1.0)
-				// Cutoffs (upper/lower)
-				* (1.0 - clamp(up_align + 0.5, 0.0, 1.0))
-				* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))
-				// Positioning
-				* smoothstep(r_to_m_line, 0.0, from_light)
-				* smoothstep(end_line, r_to_m_line * 0.25, from_light);
+			eng_from_light = star_direct * rel_star_direct;
 		#else
-			// m1 = 2.0 * clamp(total_travel_dist * total_travel_dist/ atmo_radius, 0.0, 1.0)
-			// 	// Cutoffs (upper/lower)
-			// 	* (1.0 - clamp(up_align, 0.0, 1.0))
-			// 	* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))
-			// 	// Positioning
-			// 	* smoothstep(r_to_m_line, 0.0, from_light)
-			// 	* smoothstep(end_line, r_to_m_line * 0.5, from_light);
-			m1 = smoothstep(atmo_radius * 0.25, atmo_radius * 0.75, total_travel_dist)
-				* smoothstep(r_to_m_line, r_to_m_line * 0.5, from_light);
-				//* clamp(1.0 - 5.0 * abs(up_align), 0.0, 1.0);
-				//* clamp(-up_align - 0.5, 0.0, 1.0);
+			eng_from_light = atmo_approx_lighting(density, exit_dist) * rel_star_direct;
 		#endif
-		// Solar
-		//m1 = 1.0 - pow(abs(from_light), 0.2);
-		m2 = eng_from_star * 1.0 * smoothstep(config.data.atmo_alt, atmo_radius, total_travel_dist);
 
-		sample_color = config.data.color_star * eng_from_light;
-		sample_color -= config.data.rayleigh_coefs * (r1 + r2);
-		sample_color -= config.data.mie_coefs * (m1 + m2);
+		float horizon = smoothstep(config.data.atmo_alt * 2.0, config.data.atmo_alt * 3.0, travel_dist);
+		float horizon_path = smoothstep(config.data.atmo_alt * 2.0, config.data.atmo_alt * 3.0, travel_dist + exit_dist);
+		float sunset = smoothstep(config.data.atmo_sunset_start, config.data.atmo_sunset_max, from_light);
+		r1 = 0.0; r2 = 0.0; m1 = 0.0; m2 = 0.0;
+		// Primary
+		r1 = eng_from_light *
+			smoothstep(config.data.atmo_alt * 2.0, config.data.atmo_alt, travel_dist);// * (1.0 + path_light * path_light);
+		// // Horizon
+		r2 = eng_from_light *
+			(1.0 - smoothstep(config.data.atmo_alt * 2.0, config.data.atmo_alt, travel_dist)) *
+			clamp(from_light, 0.0, 1.0);
+		// // Horizon
+		m1 = //(1.0 - (r1 + r2) * (r1 + r2), 0.0, 1.0)
+			//smoothstep(config.data.atmo_alt * 2.0, config.data.atmo_alt * 5.0, travel_dist)
+			2.0 * horizon_path *
+			//* clamp(path_light + 1.0, 0.0, 1.0)
+			sunset *
+			smoothstep(-0.3, 0.0, up_align);
+		// Star-line
+		m2 = 2.0 * (eng_from_light + eng_from_star) *
+			horizon *
+			sunset *
+			clamp(path_light, 0.0, 1.0) * path_light;
+		
+		sample_color = config.data.atmo_color_star * (eng_from_light + eng_from_star);
+		sample_color -= config.data.atmo_rayleigh_coefs * (r1 + r2);
+		sample_color -= config.data.atmo_mie_coefs * (m1 + m2);
 		color.rgb += sample_color;
-
+		
 		travel_dist += step_size;
 	}
 

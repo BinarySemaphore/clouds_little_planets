@@ -62,7 +62,7 @@ void main() {
 
 	if (is_valid) {
 		if (config.data.atmo_enable) {
-			vec4 atmo_color = color_through_atmo(start_pos, dir, max_travel_dist, 10, false);
+			vec4 atmo_color = atmo_color(start_pos, dir, max_travel_dist, 10, true);
 			color.rgb = mix(color.rgb, atmo_color.rgb, atmo_color.a);
 		}
 

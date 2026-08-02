@@ -9,87 +9,93 @@ extends Resource
 @export_group("Atmosphere", "atmo")
 ## Max altitude from surface.
 @export var atmo_height := 2.0
-## Light penetration.[br]
+@export_subgroup("Physical", "atmo_p")
+## Light absorption.[br]
 ## Measured in distance from [code]atmo_height[/code].[br]
 ## Lighting further down darkens instead of intensely scatters.
-@export var atmo_light_pen := 2.0
+@export var atmo_p_light_absorb := 0.0
+## Density factor per-sample.
+@export_range(0.0, 10.0) var atmo_p_density := 1.0
 ## Density falloff.[br]
 ## Larger values cause atmosphere to fade earlier.
-@export var atmo_density_falloff := 6.0
-## Refractive bending.
-@export var atmo_refract_bend := 0.0
+@export var atmo_p_density_falloff := 6.0
+## ...
+@export var atmo_p_overhead_scatter := 1.0
+@export_subgroup("Style", "atmo_s")
 ## Star glow size.
-@export var atmo_star_glow := 0.002
+@export var atmo_s_star_glow := 0.002
 ## Colors absorbed or unscattered during Rayleigh scattering.[br]
 ## Daylight colors subtracted.
-@export var atmo_color_direct := Color(0.467, 0.675, 1.0)
+@export var atmo_s_color_direct := Color(0.467, 0.675, 1.0)
 ## Colors absorbed or unscattered during Mie scattering.[br]
 ## Sunset colors subtracted.
-@export var atmo_color_tangent := Color(1.0, 0.776, 0.212)
+@export var atmo_s_color_tangent := Color(1.0, 0.776, 0.212)
+@export_range(-1.0, 1.0) var atmo_s_sunset_start := 0.5
+@export_range(-1.0, 1.0) var atmo_s_sunset_max := 0.0
 @export_group("Clouds")
-@export_subgroup("Style", "cld")
+@export_subgroup("Style", "cld_s")
 ## Cloud base color (when fully illuminated).
-@export var cld_color := Color.WHITE
+@export var cld_s_color := Color.WHITE
 ## Cloud light penetration.[br]
 ## Distance per light sampling.
-@export var cld_light_pen := 0.05
+@export var cld_s_light_pen := 0.05
 ## Cloud light passthrough.[br]
 ## Lower values allow more light through denser clouds.
-@export var cld_light_scatter := 5.0
+@export var cld_s_light_scatter := 5.0
 ## Cloud interior lighting.
-@export var cld_beers_factor := 6.0
+@export var cld_s_beers_factor := 6.0
 ## Cloud silverlining lighting.
-@export var cld_powder_factor := 6.5
+@export var cld_s_powder_factor := 6.5
 ## Cloud density multiplier.
-@export var cld_density_factor := 1.0
-@export_subgroup("Animation", "anim")
-@export var anim_enabled := true
-## Animation pause for [member SceneTree.paused] or ignore.
-@export var anim_pausable := true
+@export var cld_s_density_factor := 1.0
+@export_subgroup("Animation", "cld_a")
+@export var cld_a_enabled := true
+## Animation pausable in game for [member SceneTree.paused].
+@export var cld_a_pausable := true
 ## Reverse animation.
-@export var anim_reverse := false
+@export var cld_a_reverse := false
 ## Noise progression for details (noise medium, small, and wisp).
-@export var anim_detail_rate := 0.5
+@export var cld_a_detail_rate := 0.5
 ## Noise progression for position (noise large).
-@export var anim_position_rate := Vector3.ONE
+@export var cld_a_position_rate := Vector3.ONE
 ## Mask progression.
-@export var anim_mask_rate := Vector2(1.0, 0.0)
-@export_subgroup("Noise Adjust", "ns_adj")
+@export var cld_a_mask_rate := Vector2(1.0, 0.0)
+@export_subgroup("Noise Adjust", "cld_nsa")
 ## Density from noise multiplication falloff.[br]
 ## [code]0.0[/code] is maximum influence from medium and small.[br]
 ## [code]1.0[/code] is zero influence from mdeium and small, large noise only.
-@export_range(0.0, 1.0) var ns_adj_layer_falloff := 0.25
+@export_range(0.0, 1.0) var cld_nsa_layer_falloff := 0.25
 ## Density from noise threshold range min to max.[br]
 ## Equivalent to density = [code]smoothstep[/code](x, y, noise);[br]
 ## Applies only to cloud density from noises large, medium, and small;
 ## does not impact height, mask, and wisp.
-@export var ns_adj_threshold := Vector2(0.5, 0.8)
+@export var cld_nsa_threshold := Vector2(0.5, 0.8)
 ## Wisp noise prominence.
-@export var ns_adj_wisp_factor := 0.2
+@export var cld_nsa_wisp_factor := 0.2
 ## Total rescaling to match scene.[br]
 ## [code]1.0[/code] matches well with 100m diameter planets.
-@export var ns_adj_global_scale := 1.0
+@export var cld_nsa_global_scale := 1.0
 ## Noise (large, medium, small, wisp) individual scaling.
-@export var ns_adj_scale := Vector4(10.0, 2.0, 2.0, 1.0)
+@export var cld_nsa_scale := Vector4(10.0, 2.0, 2.0, 1.0)
 ## Mask Latitude and Longitude offset.
-@export var ns_adj_mask_offset := Vector2.ZERO
+@export var cld_nsa_mask_offset := Vector2.ZERO
 ## Noise 3D offset.
-@export var ns_adj_offset := Vector3.ZERO
-@export_subgroup("Noise", "ns")
+@export var cld_nsa_offset := Vector3.ZERO
+@export_subgroup("Noise", "cld_ns")
 ## Height / Altitude mask (exponential).[br]
 ## Channels:[br]
 ## - Red: Cloud density[br]
 ## - Green: Exponential additional scaling[br]
 ## - Blue: Mask Lat / Long additional offset
-@export var ns_height: GradientTexture1D
+@export var cld_ns_height: GradientTexture1D
 ## Cloud Lat / Long mask.
-@export var ns_mask: Texture2D
+@export var cld_ns_mask: Texture2D
 ## Individual cloud large noise.
-@export var ns_large: Texture3D
+@export var cld_ns_large: Texture3D
 ## Individual cloud medium noise.
-@export var ns_medium: Texture3D
+@export var cld_ns_medium: Texture3D
 ## Individual cloud small noise.
-@export var ns_small: Texture3D
+@export var cld_ns_small: Texture3D
 ## Individual wisp noise.[br]
 ## Wisps apply at height and mask edges.
-@export var ns_wisp: Texture3D
+@export var cld_ns_wisp: Texture3D

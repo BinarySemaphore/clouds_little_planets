@@ -34,14 +34,16 @@ struct CGUBO {
 	float reserved_1;
 
 	// Atmo
-	vec3 rayleigh_coefs;
-	float light_pen;
-	vec3 mie_coefs;
-	float star_glow;
-	vec3 color_star;
-	float density_falloff;
-	vec3 reserved_2;
-	float refract_bend;
+	vec3 atmo_rayleigh_coefs;
+	float atmo_light_absorb;
+	vec3 atmo_mie_coefs;
+	float atmo_star_glow;
+	vec3 atmo_color_star;
+	float atmo_density_falloff;
+	float atmo_sunset_start;
+	float atmo_sunset_max;
+	float atmo_density;
+	float atmo_overhead_scatter;
 
 	bool atmo_enable;
 	bool cloud_enable;
