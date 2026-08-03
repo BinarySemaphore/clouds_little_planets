@@ -106,6 +106,17 @@ vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 		horizon_path = smoothstep(haze_start, haze_max, travel_dist + exit_dist);
 		sunset = smoothstep(config.data.atmo_sunset_start, config.data.atmo_sunset_max, from_light);
 
+		/* Notes from last night (be warned was drunk, but pretty sure is decent idea)
+		r1 is direct blue light
+		r2 is horizon blue light driven by haze
+		m1 should be horizon tangent light toward path_light
+		m2 should be horizon tangent light inverted path_light of m1
+		m3 should be solar tangent
+
+		Controls (apart from current colors)
+		- not sure m1 needs controls, other than max at atmo_sunset_start (or varient)
+		*/
+
 		r1 = 0.0; r2 = 0.0; m1 = 0.0; m2 = 0.0;
 		// Primary
 		r1 = smoothstep(haze_start, half_atmo_alt * 0.5, travel_dist);
