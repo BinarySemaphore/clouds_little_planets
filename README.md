@@ -11,22 +11,28 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
   * [Getting Started](#getting-started)
     * [Setup](#setup)
     * [Configuring](#configuring)
-    * [Saving Profiles](#saving-profiles)
+    * [Creating and Saving Profiles](#creating-and-saving-profiles)
     * [Script Integration](#script-integration)
   * [Custom Modification](#custom-modification)
     * [Shaders](#shaders)
-* [Test](#test)
+* [Testing](#testing)
+  * [Performance](#performance)
+    * [Bench_01](#bench_01)
+    * [Bench_02](#bench_02)
   * [Example Project](#example-project)
 * [Thirdparty](#thirdparty)
 * [Notable Mentions](#notable-mentions)
 
 ## Features
 - Inside and out (from space) atmospheric and cloud rendering
+- Art driven atmospherics
+  - Physics inspired, but art simplified (adjust haze and sunsets based on distance and vector-angles)
 - Volumetric cloud generation
+  - Cloud atmosphere relighting
 - Profiles (for quick swapping in editor or during runtime)
   - Planet and Quality profile resources
-- Radial or Flat world rendering
-- Multiple cloud varying layers
+- Radial (large scale / toy planet) or Flat world rendering
+- Multiple cloud adjustable layers
 - Rescaling
 - Time progression
 - Wind (WIP)
@@ -94,7 +100,7 @@ Configuration is done in the compositor, ensure the __CloudsLP__ instance is exp
      > Godot's `CompositorEffect` is not attached to the scene tree and cannot directly resolve a relative _NodePath_. __CloudsLP__ reconstructs the lookup during initialization by locating the first named ancestor in the active scene, then resolves with the remainder of the path. The resulting `Light3D` is cached for runtime use. Restrictions from this limitation are documented directly in the parameter. Warnings and errors are given to help resolve any problems.
 
 _In Progress..._
-#### Saving Profiles
+#### Creating and Saving Profiles
 #### Script Integration
 
 ### Custom Modification
@@ -104,9 +110,33 @@ Most of the actual code exists in `atmo.glslinc`, `atmo_main.glslinc`, and `clou
 - __Warning__:
    >Godot treats `*.glslinc` files as text substitutions. Changes to an include file do **not** automatically trigger reimport of the `*.glsl` shaders that include it. After modifying an include, manually reimport all affected `*.glsl` shaders before reloading or running the project, or the changes will not take effect.
 
-
-## Test
+## Testing
 This addon repository is its own testable Godot project (Godot 4.6 | Forward+ rendering).
+### Performance
+#### Bench_01:
+- __Scene__: Earth - avg cloud coverage 2 layers
+- __OS__: Linux
+- __Hardware__: Nvidia GeForce RTX 2060 Max-Q (messured clock at 1.6 GHz)
+- __Settings__: 1920x1080 | Scale Down "Quarter" | Quality "High"
+- __Times (avg)__:
+  - __Ground-to-Sky__: 2.78 ms
+  - __Flight__: 5.18 ms
+  - __Space-whole-planet__: 11.96 ms
+- __VRAM (includes planet textures)__:
+  - __Textures__: 209.6 MB
+  - __Buffers__: 20.94 MB
+#### Bench_02:
+- __Scene__: Earth - avg cloud coverage 2 layers
+- __OS__: Linux
+- __Hardware__: Nvidia GeForce RTX 2060 Max-Q (messured clock at 1.6 GHz)
+- __Settings__: 1920x1080 | Scale Down "Eighth" | Quality "Medium"
+- __Times (avg)__:
+  - __Ground-to-Sky__: 1.67 ms
+  - __Flight__: 2.19 ms
+  - __Space-whole-planet__: 3.18 ms
+- __VRAM (includes planet textures)__:
+  - __Textures__: 208.7 MB
+  - __Buffers__: 20.94 MB
 ### Example Project
 1) Download this repository
    1) Find and select `Code` at the top of GitHub
