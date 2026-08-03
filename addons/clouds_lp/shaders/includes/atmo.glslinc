@@ -20,7 +20,11 @@ float atmo_density(float alt_normal) {
 }
 
 float atmo_approx_attenuation(float dist) {
-	return 1.0 - clamp(dist * dist * config.data.atmo_density / (config.data.radius + config.data.atmo_alt), 0.0, 1.0);
+	float lin_atten = 1.0 - clamp(
+		dist * ATMO_LIGHT_ATTEN_SCALAR * config.data.atmo_density /
+		(config.data.radius * config.data.cl_global_scale + config.data.atmo_alt),
+		0.0, 1.0);
+	return lin_atten * lin_atten;
 }
 
 vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
