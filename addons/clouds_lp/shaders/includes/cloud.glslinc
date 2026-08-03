@@ -159,7 +159,6 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 				atmo_dist_exit = planet_hit.x;
 				scatter_lumin = 0.0;
 			}
-			// scatter_lumin = 1.0;
 			if (config.data.cloud_atmo_light_enable) {
 				// Get color from star in sky, sky towards star (sans star), and overhead sky
 				// Should add up to 1.0 when combined (so these are percents from each);

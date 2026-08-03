@@ -27,11 +27,11 @@ extends Resource
 ## Star glow size.
 @export var atmo_s_star_glow := 0.002
 ## Daylight color.
-@export var atmo_s_color_direct := Color(0.467, 0.675, 1.0)
+@export var atmo_s_color_direct := Color(0.0, 0.506, 0.902)
 ## Sunset color (partial).[br]
 ## Sunset color absoption multiplies this. It will darken
 ## (ex: yellow will be red).
-@export var atmo_s_color_tangent := Color(1.0, 0.776, 0.212)
+@export var atmo_s_color_tangent := Color(1.0, 0.863, 0.729)
 ## Distance relative to [member AtmosphereProfile.atmo_height] where horizon
 ## haze starts.
 @export_range(0.0, 5.0) var atmo_s_haze_start := 2.0

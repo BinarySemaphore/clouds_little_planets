@@ -12,10 +12,8 @@
 script = ExtResource("1_gvpdk")
 atmo_height = 1.25
 atmo_p_overhead_scatter = 3.5
-atmo_s_color_direct = Color(0.3420422, 0.5983203, 0.99999744, 1)
-atmo_s_color_tangent = Color(0.8703159, 0.5827356, 0, 1)
-atmo_s_haze_max = 4.0
-atmo_s_sunset_max = -0.07399999999999995
+atmo_s_color_tangent = Color(1, 0.8627451, 0.7294118, 1)
+atmo_s_sunset_start = 0.6499999999999999
 cld_s_light_scatter = 1.5
 cld_s_density_factor = 1.5
 cld_a_mask_rate = Vector2(-0.1, 0)
