@@ -2,11 +2,11 @@ class_name AtmosphereProfile
 extends Resource
 
 @export_group("Planet", "planet")
+@export var planet_has_atmosphere := true
+@export var planet_has_clouds := true
 ## Planet radius.[br]
 ## For [member CloudsLP.flat_world] this adjusts some distance-based effects.
 @export var planet_radius := 50.0
-@export var planet_has_atmosphere := true
-@export var planet_has_clouds := true
 @export_group("Atmosphere", "atmo")
 ## Max altitude from surface.
 @export var atmo_height := 2.0
@@ -24,20 +24,21 @@ extends Resource
 ## Useful to increase opacity to block out stars or objects in space.
 @export var atmo_p_overhead_scatter := 1.0
 @export_subgroup("Style", "atmo_s")
-## Star glow size.
+## Star glow size.[br]
+## Dot-angle relative to view and star light.
 @export var atmo_s_star_glow := 0.002
 ## Daylight color.
 @export var atmo_s_color_direct := Color(0.0, 0.506, 0.902)
 ## Sunset color (partial).[br]
 ## Sunset color absoption multiplies this. It will darken
 ## (ex: yellow will be red).
-@export var atmo_s_color_tangent := Color(1.0, 0.863, 0.729)
+@export var atmo_s_color_tangent := Color(0.98, 0.737, 0.0)
 ## Distance relative to [member AtmosphereProfile.atmo_height] where horizon
 ## haze starts.
-@export_range(0.0, 5.0) var atmo_s_haze_start := 2.0
+@export_range(0.0, 10.0) var atmo_s_haze_start := 2.0
 ## Distance relative to [member AtmosphereProfile.atmo_height] where horizon
 ## haze reaches maximum.
-@export_range(0.0, 5.0) var atmo_s_haze_max := 3.0
+@export_range(0.0, 10.0) var atmo_s_haze_max := 5.0
 ## Dot-angle relative to planet normal and star light where sunset starts.[br]
 ## [code]1.0[/code] is light overhead.[br]
 ## [code]0.0[/code] is perpendicular (light half set on horizon).[br]

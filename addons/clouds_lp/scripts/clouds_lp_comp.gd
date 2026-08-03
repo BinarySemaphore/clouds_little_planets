@@ -40,7 +40,7 @@ extends CompositorEffect
 			_longterm_uniforms_good = false
 			_mutex.unlock()
 ## Reload shader files once.[br]
-## Auto resets back to [code]false[/code] (it's like a button)
+## Auto resets back to [code]false[/code] (it's like a button).
 @export var reload := false:
 	set(value):
 		reload = false
@@ -66,7 +66,8 @@ extends CompositorEffect
 ## Overrides [member CloudsLP.profile].
 @export var cloud_atmo_light_enabled := true
 ## Reset cloud animation time back to [code]0[/code].[br]
-## See [member CloudsLP.profile] > [code]Clouds > Animation[/code] section for
+## Auto resets back to [code]false[/code] (it's like a button).[br]
+## [br][color=white]Note:[/color] See [member CloudsLP.profile] > [code]Clouds > Animation[/code] section for
 ## animation configuration.
 @export var cloud_animation_reset := false:
 	set(value):
@@ -710,14 +711,14 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, 0.0); idx += 4
 	
 	linear_color = profile.atmo_s_color_direct.srgb_to_linear()
-	linear_color = Color.WHITE - linear_color  # Convert to Rayleigh
+	linear_color = Color.WHITE - linear_color  # Convert to Rayleigh Absorption
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
 	_config_data.encode_float(idx, linear_color.b); idx += 4
 	_config_data.encode_float(idx, profile.atmo_p_light_absorb); idx += 4
 	
 	linear_color = profile.atmo_s_color_tangent.srgb_to_linear()
-	linear_color = Color.WHITE - linear_color  # Convert to Mie
+	linear_color = Color.WHITE - linear_color  # Convert to Mie Absorption
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
 	_config_data.encode_float(idx, linear_color.b); idx += 4

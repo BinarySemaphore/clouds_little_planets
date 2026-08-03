@@ -35,9 +35,8 @@ vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 	float star_fade = 1.0 - config.data.atmo_star_glow;
 	float haze_start = config.data.atmo_alt * config.data.atmo_haze_start;
 	float haze_max = config.data.atmo_alt * config.data.atmo_haze_max;
-	float haze_start_partial = haze_start * 0.75;
 	float planet_occlusion = min(config.data.atmo_alt * 10.0, config.data.radius * 0.5);
-	float half_atmo_alt = config.data.atmo_alt * 0.5;
+	float quarter_atmo_alt = config.data.atmo_alt * 0.25;
 	float alt_start_overhead_scatter = config.data.atmo_alt * 1.5 / config.data.atmo_density_falloff;
 
 	float star_in_view = 1.0;
@@ -53,12 +52,10 @@ vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 	}
 
 	vec3 pos, planet_norm, sample_color;
-	vec2 exit_atmo;
-	float altitude, altitude_norm, exit_dist, overhead_scatter, density;
+	float altitude, altitude_norm, overhead_scatter, density;
 	float from_light, path_light, up_align;
-	float star_scatter_light, eng_from_star, eng_from_light, eng_total;
-	float horizon, horizon_path, sunset;
-	float r1, r2, m1, m2;
+	float scattering, light_star, light_scatter, light_total;
+	float horizon, sunset, r1, r2, m1, m2;
 	for(int i = 1; i < samples; i++) {
 		pos = start + dir * travel_dist;
 		altitude = alt_from_pos(pos);
@@ -80,59 +77,39 @@ vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 		density += (1.0 - density) * overhead_scatter * config.data.atmo_overhead_scatter;
 		total_density += density;
 
-		star_scatter_light = 1.0;
+		scattering = 1.0;
 		hit_planet = vec2(0.0);
 		#ifdef FLAT_WORLD
-			exit_atmo.y = plane_intersect(pos, to_light, config.data.pos + vec3(0.0, config.data.atmo_alt, 0.0), up);
 			hit_planet.y = plane_intersect(pos, to_light, config.data.pos, up);
 		#else
-			exit_atmo = sphere_intersect(pos, to_light, config.data.pos, config.data.radius + config.data.atmo_alt);
 			hit_planet = sphere_intersect(pos, to_light, config.data.pos, config.data.radius);
 		#endif
-		exit_dist = exit_atmo.y * rand_near_one(0.01);
 		if (hit_planet.y > 0.0) {
-			star_scatter_light = 1.0 - smoothstep(0.0, planet_occlusion, hit_planet.y);
+			scattering = 1.0 - smoothstep(0.0, planet_occlusion, hit_planet.y);
 		}
 
 		if (!solar) {
-			eng_from_star = 0.0;
+			light_star = 0.0;
 		} else {
-			eng_from_star = 20.0 * star_in_view * smoothstep(star_fade, 1.0, path_light);
+			light_star = 20.0 * star_in_view * smoothstep(star_fade, 1.0, path_light);
 		}
-		eng_from_light = star_scatter_light * smoothstep(-0.2, 0.5, from_light);
-		eng_total = eng_from_star + eng_from_light;
+		light_scatter = scattering * smoothstep(-0.2, 0.5, from_light);
+		light_total = light_star + light_scatter;
 
 		horizon = smoothstep(haze_start, haze_max, travel_dist);
-		horizon_path = smoothstep(haze_start, haze_max, travel_dist + exit_dist);
 		sunset = smoothstep(config.data.atmo_sunset_start, config.data.atmo_sunset_max, from_light);
-
-		/* Notes from last night (be warned was drunk, but pretty sure is decent idea)
-		r1 is direct blue light
-		r2 is horizon blue light driven by haze
-		m1 should be horizon tangent light toward path_light
-		m2 should be horizon tangent light inverted path_light of m1
-		m3 should be solar tangent
-
-		Controls (apart from current colors)
-		- not sure m1 needs controls, other than max at atmo_sunset_start (or varient)
-		*/
-
-		r1 = 0.0; r2 = 0.0; m1 = 0.0; m2 = 0.0;
+		// r1 = 0.0; r2 = 0.0; m1 = 0.0; m2 = 0.0;
 		// Primary
-		r1 = smoothstep(haze_start, half_atmo_alt * 0.5, travel_dist);
-		// Horizon
-		r2 = (1.0 - smoothstep(haze_start_partial, half_atmo_alt, travel_dist)) *
-			clamp(from_light, 0.0, 1.0);
-		// Horizon
-		m1 = 0.5 * sunset * horizon_path *
-			smoothstep(-0.3, 0.0, up_align);
+		r1 = smoothstep(haze_start, quarter_atmo_alt, travel_dist);
+		// Horizon (inverted top down fill)
+		r2 = (1.0 - r1) * (1.0 - horizon * 0.25) * (1.0 - sunset);
 		// Star-line
-		m2 = 4.0 * eng_total *
-			sunset * horizon *
-			clamp(path_light, 0.0, 1.0) * path_light;
+		m1 = 2.0 * light_total * sunset * horizon;
+		// Horizon
+		m2 = sunset * horizon;
 		
-		sample_color = config.data.atmo_color_star * eng_total;
-		sample_color -= config.data.atmo_rayleigh_coefs * eng_from_light *(r1 + r2);
+		sample_color = config.data.atmo_color_star * light_total;
+		sample_color -= config.data.atmo_rayleigh_coefs * light_scatter *(r1 + r2);
 		sample_color -= config.data.atmo_mie_coefs * (m1 + m2);
 		color.rgb += sample_color;
 		

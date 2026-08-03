@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dsoo1ywxlvmqa" path="res://addons/clouds_lp/noise/01_height.tres" id="1_8wopr"]
 [ext_resource type="NoiseTexture3D" uid="uid://d2j8xtettj86a" path="res://addons/clouds_lp/noise/01_large.tres" id="2_ppv5r"]
-[ext_resource type="Texture2D" uid="uid://djf8566a0rvyw" path="res://addons/clouds_lp/noise/01_mask.tres" id="3_hqpvq"]
+[ext_resource type="Texture2D" uid="uid://djf8566a0rvyw" path="res://addons/clouds_lp/noise/01_mask.tres" id="3_8wopr"]
 [ext_resource type="NoiseTexture3D" uid="uid://jo0idns52fuo" path="res://addons/clouds_lp/noise/01_medium.tres" id="4_2ar84"]
 [ext_resource type="NoiseTexture3D" uid="uid://cyvflshjc7nkw" path="res://addons/clouds_lp/noise/01_small.tres" id="5_v81ha"]
 [ext_resource type="CompressedTexture3D" uid="uid://dxblpixysg83u" path="res://addons/clouds_lp/noise/curl_noise_packed.png" id="6_6fdc8"]
@@ -10,20 +10,18 @@
 
 [resource]
 script = ExtResource("7_8t4yt")
-planet_radius = 1000.0
 atmo_height = 50.0
 atmo_p_overhead_scatter = 3.5
 cld_s_light_scatter = 1.5
 cld_s_density_factor = 1.5
 cld_a_enabled = false
 cld_nsa_threshold = Vector2(0.5, 0.7)
-cld_nsa_wisp_factor = 0.3
 cld_nsa_global_scale = 50.0
 cld_nsa_scale = Vector4(8, 2, 2, 2)
 cld_nsa_mask_offset = Vector2(0.42, 0)
 cld_nsa_offset = Vector3(0, 0, 2)
 cld_ns_height = ExtResource("1_8wopr")
-cld_ns_mask = ExtResource("3_hqpvq")
+cld_ns_mask = ExtResource("3_8wopr")
 cld_ns_large = ExtResource("2_ppv5r")
 cld_ns_medium = ExtResource("4_2ar84")
 cld_ns_small = ExtResource("5_v81ha")
