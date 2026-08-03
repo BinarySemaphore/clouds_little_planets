@@ -19,7 +19,7 @@ struct CGUBO {
 	vec3 cl_color;
 	int cl_steps;
 	float cl_step_scalar;
-	float cl_min_step_size;
+	float cl_max_step_size;
 	float cl_deband;
 	float cl_deband_scalar;
 	vec3 cl_offset;
@@ -44,6 +44,9 @@ struct CGUBO {
 	float atmo_sunset_max;
 	float atmo_density;
 	float atmo_overhead_scatter;
+	vec2 reserved_2;
+	float atmo_haze_start;
+	float atmo_haze_max;
 
 	bool atmo_enable;
 	bool cloud_enable;

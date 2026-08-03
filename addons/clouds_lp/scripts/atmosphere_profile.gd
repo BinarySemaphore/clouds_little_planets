@@ -2,7 +2,8 @@ class_name AtmosphereProfile
 extends Resource
 
 @export_group("Planet", "planet")
-## For [code]Flat World[/code] this is sea level.
+## Planet radius.[br]
+## For [member CloudsLP.flat_world] this adjusts some distance-based effects.
 @export var planet_radius := 50.0
 @export var planet_has_atmosphere := true
 @export var planet_has_clouds := true
@@ -11,26 +12,42 @@ extends Resource
 @export var atmo_height := 2.0
 @export_subgroup("Physical", "atmo_p")
 ## Light absorption.[br]
-## Measured in distance from [code]atmo_height[/code].[br]
-## Lighting further down darkens instead of intensely scatters.
+## Measured as a percent distance of [member AtmosphereProfile.atmo_height].[br]
+## Lighting further down darkens instead of brightly scatters.
 @export var atmo_p_light_absorb := 0.0
 ## Density factor per-sample.
 @export_range(0.0, 10.0) var atmo_p_density := 1.0
 ## Density falloff.[br]
 ## Larger values cause atmosphere to fade earlier.
 @export var atmo_p_density_falloff := 6.0
-## ...
+## Multiplier for added overhead scatter near ground.[br]
+## Useful to increase opacity to block out stars or objects in space.
 @export var atmo_p_overhead_scatter := 1.0
 @export_subgroup("Style", "atmo_s")
 ## Star glow size.
 @export var atmo_s_star_glow := 0.002
-## Colors absorbed or unscattered during Rayleigh scattering.[br]
-## Daylight colors subtracted.
+## Daylight color.
 @export var atmo_s_color_direct := Color(0.467, 0.675, 1.0)
-## Colors absorbed or unscattered during Mie scattering.[br]
-## Sunset colors subtracted.
+## Sunset color (partial).[br]
+## Sunset color absoption multiplies this. It will darken
+## (ex: yellow will be red).
 @export var atmo_s_color_tangent := Color(1.0, 0.776, 0.212)
+## Distance relative to [member AtmosphereProfile.atmo_height] where horizon
+## haze starts.
+@export_range(0.0, 5.0) var atmo_s_haze_start := 2.0
+## Distance relative to [member AtmosphereProfile.atmo_height] where horizon
+## haze reaches maximum.
+@export_range(0.0, 5.0) var atmo_s_haze_max := 3.0
+## Dot-angle relative to planet normal and star light where sunset starts.[br]
+## [code]1.0[/code] is light overhead.[br]
+## [code]0.0[/code] is perpendicular (light half set on horizon).[br]
+## [code]-1.0[/code] is furthest from light (midnight).
 @export_range(-1.0, 1.0) var atmo_s_sunset_start := 0.5
+## Dot-angle relative to planet normal and star light where sunset reaches
+## maximum.[br]
+## [code]1.0[/code] is light overhead.[br]
+## [code]0.0[/code] is perpendicular (light half set on horizon).[br]
+## [code]-1.0[/code] is furthest from light (midnight).
 @export_range(-1.0, 1.0) var atmo_s_sunset_max := 0.0
 @export_group("Clouds")
 @export_subgroup("Style", "cld_s")

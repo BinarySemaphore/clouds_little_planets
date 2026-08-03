@@ -3,13 +3,19 @@ class_name CloudsLP
 extends CompositorEffect
 
 ## Print debug messages to log/output.[br]
-## [color=white]Note:[/color] Errors are still logged while debug is disabled.
+## [br][color=white]Note:[/color] Errors are still logged while debug is
+## disabled.
 @export var debug_output := false
-## [code]Editor[/code]-only cloud rendering resolution down scaling ratio.[br]
+## [code]In-Editor[/code] Cloud rendering resolution down scaling ratio.[br]
 ## Does not impact atmoshpere.[br]
-## [color=yellow]Warning:[/color] Major performance impact closer to
+## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
-## [br]For more performance control, see [color=white]Cloud Quality[/color].
+## [br][color=white]Note:[/color] Recommend lower resolutions for editor to
+## reduce resouce load while working, compositor can be toggled on/off with
+## [member CloudsLP.enabled] (near bottom).[br] 
+## [br][color=white]Note:[/color] For in-game resolution, see
+## [member CloudsLP.scale_down_power].
+## For more performance control, see [member CloudsLP.cloud_quality] profile.
 @export_enum("Native", "Half", "Quarter", "Eighth", "Sixteenth", "Thirtysecond") var scale_down_power_editor: int = 3:
 	set(value):
 		scale_down_power_editor = value
@@ -18,11 +24,13 @@ extends CompositorEffect
 			_scaled_down = 1 << scale_down_power_editor
 			_longterm_uniforms_good = false
 			_mutex.unlock()
-## Cloud rendering resolution down scaling ratio.[br]
+## [code]In-Game[/code] Cloud rendering resolution down scaling ratio.[br]
 ## Does not impact atmoshpere.[br]
-## [color=yellow]Warning:[/color] Major performance impact closer to
+## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
-## [br]For more performance control, see [color=white]Cloud Quality[/color].
+## [br][color=white]Note:[/color] For more performance control, see
+## [member CloudsLP.cloud_quality] profile.[br]
+## [br][color=white]Note:[/color] Changing this will reallocate buffer data.
 @export_enum("Native", "Half", "Quarter", "Eighth", "Sixteenth", "Thirtysecond") var scale_down_power: int = 2:
 	set(value):
 		scale_down_power = value
@@ -31,7 +39,8 @@ extends CompositorEffect
 			_scaled_down = 1 << scale_down_power
 			_longterm_uniforms_good = false
 			_mutex.unlock()
-## Force reload of shader files.
+## Reload shader files once.[br]
+## Auto resets back to [code]false[/code] (it's like a button)
 @export var reload := false:
 	set(value):
 		reload = false
@@ -47,22 +56,26 @@ extends CompositorEffect
 			#_mutex.lock()
 			#_req_write_debug = true
 			#_mutex.unlock()
-## Force disable atmosphere.
-## Overrides [code]Profile[/code].
+## Render atmosphere.[br]
+## Overrides [member CloudsLP.profile].
 @export var atmo_enabled := true
-## Force disable clouds.
-## Overrides [code]Profile[/code].
+## Render clouds.[br]
+## Overrides [member CloudsLP.profile].
 @export var cloud_enabled := true
-## Force disable cloud atmospheric lighting.[br]
-## Overrides [code]Profile[/code].
+## Render cloud atmospheric lighting.[br]
+## Overrides [member CloudsLP.profile].
 @export var cloud_atmo_light_enabled := true
+## Reset cloud animation time back to [code]0[/code].[br]
+## See [member CloudsLP.profile] > [code]Clouds > Animation[/code] section for
+## animation configuration.
 @export var cloud_animation_reset := false:
 	set(value):
 		cloud_animation_reset = false
 		if value:
 			_cloud_anim_time = 0.0
-## Force flat world (Y axis is altitude).[br]
-## [code]Profile.Planet.Radius[/code] will be used as sea-level.
+## Force flat world ([code]Y[/code] axis is altitude).[br]
+## [member CloudsLP.position] will be used as sea-level.[br]
+## [br][color=white]Note:[/color] Changing this will reload shaders.
 @export var flat_world := false:
 	set(value):
 		flat_world = value
@@ -70,17 +83,21 @@ extends CompositorEffect
 		_reload_shaders = true
 		_mutex.unlock()
 ## Optional distance limit, useful for simple cloud sampling.[br]
-## [color=white]Note:[/color] ignored for values <= 0.0.
+## [br][color=white]Note:[/color] ignored for values <= [code]0.0[/code].
 @export var max_distance := 0.0
+## Planet position in world-space.[br]
+## For [member CloudsLP.flat_world] the [code]Y[/code] component is sea-level.
 @export var position := Vector3.ZERO
 ## [code]Light3D[/code] to drive lighting color and positioning.[br]
-## [color=white]Note:[/color] For non-directional lights, range and attenuation
-## are ignored.[br]
+## [br][color=white]Note:[/color] For non-directional lights, range and
+## attenuation are ignored.[br]
 ## [br][color=yellow]Warning:[/color] The [code]Light3D[/code] should not be a
 ## child of the compositor's subtree. Compositor scene awareness is limited,
 ## so a relative path must be resolved to find the actual node instance. This
 ## is done during initialization or anytime the [code]Light3D[/code]'s path
-## changes.
+## changes.[br]
+## [br][color=white]Note:[/color] Assigning a different light source will
+## reload shadders.
 @export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath:
 	set(value):
 		light_source = value
@@ -89,15 +106,20 @@ extends CompositorEffect
 		_reload_shaders = true
 		_mutex.unlock()
 ## Cloud Quality Profile.[br]
-## [color=yellow]Warning:[/color] Performance impacting.[br]
-## [br]See [color=white]Scale Down Power[/color] for more performance control.
+## [br][color=yellow]Warning:[/color] Performance impacting.[br]
+## [br][color=white]Note:[/color] See [member CloudsLP.scale_down_power] for
+## more performance control.[br]
+## [br][color=white]Note:[/color] Assigning a different quality profile will
+## reload shadders.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
 		cloud_quality = value
 		_mutex.lock()
 		_reload_shaders = true
 		_mutex.unlock()
-## Atmosphere and Cloud Profile.
+## Atmosphere and Cloud Profile.[br]
+## [br][color=white]Note:[/color] Assigning a different profile will reload
+## shadders.
 @export var profile: AtmosphereProfile:
 	set(value):
 		profile = value
@@ -305,9 +327,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_cleanup(false, true)  # Cleanup data only
 	_print_debug("Allocating longterm data...")
 	
-	if not _config_data or _config_data.size() != 256:
+	if not _config_data or _config_data.size() != 272:
 		_config_data = PackedByteArray()
-		_config_data.resize(256)
+		_config_data.resize(272)
 	
 	var sampler_linear_state := RDSamplerState.new()
 	sampler_linear_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
@@ -663,7 +685,7 @@ func _update_config_data() -> void:
 	_config_data.encode_s32(idx, cloud_quality.steps); idx += 4
 	
 	_config_data.encode_float(idx, cloud_quality.step_scalar); idx += 4
-	_config_data.encode_float(idx, cloud_quality.min_step_size); idx += 4
+	_config_data.encode_float(idx, cloud_quality.max_step_size); idx += 4
 	_config_data.encode_float(idx, cloud_quality.deband_noise); idx += 4
 	_config_data.encode_float(idx, cloud_quality.deband_noise_scalar); idx += 4
 	
@@ -714,6 +736,11 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, profile.atmo_s_sunset_max); idx += 4
 	_config_data.encode_float(idx, profile.atmo_p_density); idx += 4
 	_config_data.encode_float(idx, profile.atmo_p_overhead_scatter); idx += 4
+	
+	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, profile.atmo_s_haze_start); idx += 4
+	_config_data.encode_float(idx, profile.atmo_s_haze_max); idx += 4
 	
 	_config_data.encode_float(idx, float(atmo_enabled and profile.planet_has_atmosphere)); idx += 4
 	_config_data.encode_float(idx, float(cloud_enabled and profile.planet_has_clouds)); idx += 4

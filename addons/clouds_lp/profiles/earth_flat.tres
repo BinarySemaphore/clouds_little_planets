@@ -10,11 +10,12 @@
 
 [resource]
 script = ExtResource("7_8t4yt")
-planet_radius = 0.0
+planet_radius = 1000.0
 atmo_height = 50.0
-atmo_p_density_falloff = 6.5
+atmo_p_overhead_scatter = 3.5
 cld_s_light_scatter = 1.5
 cld_s_density_factor = 1.5
+cld_a_enabled = false
 cld_nsa_threshold = Vector2(0.5, 0.7)
 cld_nsa_wisp_factor = 0.3
 cld_nsa_global_scale = 50.0
