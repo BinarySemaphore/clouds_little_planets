@@ -113,7 +113,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 
 	for (int i = 0; i < config.data.cl_steps; i++) {
 		if (travel_dist > max_travel_dist) break;
-		if (color.a > 0.01) depth = min(depth, travel_dist);
+		if (color.a > 0.001) depth = min(depth, travel_dist);
 		if (color.a >= 1.0) break;
 
 		pos = start + dir * travel_dist;
@@ -198,9 +198,29 @@ void main() {
 
 	// TODO: Replace with full-res uv depth_sampler.
 	// Scrap down-scaled depth, otherwise clouds behind opaques post-atmo will be chunky (giving outline appearance)
+	// Edit:
+	//     That won't work. Cloud pass is down-scaled, converting i_uv to full-res screen uv to sample
+	// depth cannot add any depth fidelity. The only way would be to 2D for-loop over the "sub-pixels"
+	// in the depth sample, which means clouds are calculated at native res. Even worse, the output is
+	// still low-res, so all of that get's thrown away in the output constraint anyway.
+	// It's simply not possible at the cloud pass.
+	// The solution: on the depth scale down pass, instead of averaging all depth pixels into low-res
+	// depth pixel, keep only the largest value for the low-res depth output.
+	// This ensures clouds that __need__ to be drawn behind foreground opaque objects are not
+	// prematurely skipped due to low-res depth averaging. At the edges of a foreground object, the
+	// low-res depth will bias towards distance, overdrawing clouds at edges.
+	// We keep the updated depth output from clouds, both depth and color get upscaled.
+	// On the combine pass within atmo_main, which is native res, use the depth comparison to draw
+	// foreground objects over the larger cloud pixels.
 
 	// highp float depth_planar = imageLoad(inout_depth, uv).r;
 	float depth_planar = imageLoad(inout_depth, uv).r;
+	// int range = int(params.scale_down);
+	// ivec2 fs_uv = uv * range;
+	// vec2 fs_screen_uv = get_screen_uv(fs_uv, scene.data.viewport_size);
+	// float depth = texture(in_depth_sampler, fs_screen_uv).r;
+	// vec4 ndc = get_ndc(fs_screen_uv, depth);
+	// float depth_planar = get_depth_linear(scene.data.inv_projection_matrix, ndc);
 	// To get proper screen_uv it's easier to scale up and use viewport_size.
 	// Since params.size is ceil-ed from (viewport_size / params.scale_down),
 	// X or Y may have partial pixels (overscanned); doesn't matter for drawing,
@@ -213,6 +233,7 @@ void main() {
 	float depth_lim = depth_planar / dot(dir, cam_forward);
 	vec4 color = vec4(0.0);
 
+	float orig_depth_lim = depth_lim;
 	#ifdef FLAT_WORLD
 	// Depth past render far plane
 	if (depth_lim >= scene.data.z_far - 0.1) {
@@ -274,7 +295,7 @@ void main() {
 		}
 
 		if (config.data.cloud_enable) {
-			color = cloud_march(start_pos, dir, max_travel_dist, depth_lim);
+			color = cloud_march(start_pos, dir, max_travel_dist, orig_depth_lim);
 		}
 
 		/* DEBUG: Draw hits with travel dist ratio */
@@ -282,6 +303,6 @@ void main() {
 		// color = vec4(vec3(0.0, travel_ratio, travel_ratio), 0.9);
 	}
 
-	imageStore(inout_depth, uv, vec4(depth_lim, 0.0, 0.0, 0.0));
+	imageStore(inout_depth, uv, vec4(orig_depth_lim, 0.0, 0.0, 0.0));
 	imageStore(out_image, uv, color);
 }
