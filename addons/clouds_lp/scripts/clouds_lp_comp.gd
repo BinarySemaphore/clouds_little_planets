@@ -76,6 +76,9 @@ extends CompositorEffect
 			_cloud_anim_time = 0.0
 ## Force flat world ([code]Y[/code] axis is altitude).[br]
 ## [member CloudsLP.position] will be used as sea-level.[br]
+## [member CloudsLP.profile] > [code]Planet > Radius[/code]
+## ([member AtmosphereProfile.planet_radius]) will be used for some distance
+## effects (cloud light attenuation, haze, sunest intensity, etc..).[br]
 ## [br][color=white]Note:[/color] Changing this will reload shaders.
 @export var flat_world := false:
 	set(value):

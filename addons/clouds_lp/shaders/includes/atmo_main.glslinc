@@ -38,10 +38,11 @@ void main() {
 		}
 		if (hit.y > 0.0 && hit.x <= depth_lim) {
 			start_pos = cam_pos + dir * hit.x;
-			max_travel_dist = min(
-				min(depth_lim - hit.x, hit.y),
-				FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt
-			);
+			max_travel_dist = min(depth_lim - hit.x, hit.y);
+			// max_travel_dist = min(
+			// 	min(depth_lim - hit.x, hit.y),
+			// 	2.0 * (config.data.radius + config.data.atmo_alt)
+			// );
 			is_valid = true;
 		}
 	#else

@@ -124,6 +124,8 @@ vec3 ray_screen(mat3x4 inv_view, mat4 inv_proj, vec4 ndc) {
 	return normalize(ray_direction);
 }
 
+#ifndef FLAT_WORLD
+
 /* Checks if a sphere is fully out of view (including from inside).
  * View is defined by pos and dir.
  * Sphere is defined by center and radius.
@@ -168,6 +170,12 @@ vec2 sphere_intersect_prechecked(vec3 pos, vec3 dir, vec3 center, float radius) 
 	return vec2(W - Z_sqrt, 2.0 * Z_sqrt);
 }
 
+/* Line-Sphere intersection (range based).
+ * Line defined by pos and dir; Sphere defined by center and radius.
+ * Returns vec2(start, dist) where start is distance from pos along
+ * dir (first entry); dist is distance through sphere (start to exit).
+ * Note: a dist of zero (vec2(x, 0.0)) indicates no intersection.
+*/
 vec2 sphere_intersect(vec3 pos, vec3 dir, vec3 center, float radius) {
 	float radius_squared = radius * radius;
 	vec3 rel_center = center - pos;
@@ -195,21 +203,12 @@ vec2 sphere_intersect(vec3 pos, vec3 dir, vec3 center, float radius) {
 	return vec2(W - Z_sqrt, 2.0 * Z_sqrt);
 }
 
-/* Returns distance to plane (exclusively - ignores parallel along plane)
+#else  // FLAT_WORLD
+
+/* Returns distance to plane (exclusively - ignores parallel along and inside plane)
  * If negative, it never hits plane by dir.
 */
 float plane_intersect(vec3 pos, vec3 dir, vec3 plane_pos, vec3 plane_norm) {
-	/*
-	Line:
-		p = a + d * l
-	Plane:
-		N dot (p - b) = 0
-	
-	N dot (a + d * l - b) = 0
-	l = N dot (b - a) / N dot d
-	check N dot d, if 0, check if line in plane, if not is parallel and never reaches
-	*/
-
 	float nd = dot(plane_norm, dir);
 	if (abs(nd) <= 0.0001) {
 		// Could technically be in plane, but this is exclusive.
@@ -218,6 +217,29 @@ float plane_intersect(vec3 pos, vec3 dir, vec3 plane_pos, vec3 plane_norm) {
 	return dot(plane_norm, plane_pos - pos) / nd;
 }
 
+/* Line-plane intersection and penetration.
+ * Line defined by pos and dir; Plane defined by plane_pos
+ * (assumes plane normal is up vec3(0.0, 1.0, 0.0)).
+ * Returns vec2(start, dist) where start is distance from pos along dir
+ * (first entry); dist is distance past plane to max_dist.
+ * Note: a dist of zero (vec2(x, 0.0)) indicates no penetration.
+*/
+vec2 plane_penetration(vec3 pos, vec3 dir, vec3 plane_pos, float max_dist) {
+	float dist_from_pos = plane_intersect(pos, dir, plane_pos, vec3(0.0, 1.0, 0.0));
+	if (dist_from_pos >= 0.0) {
+		return vec2(dist_from_pos, clamp(max_dist - dist_from_pos, 0.0, max_dist));
+	}
+	return vec2(0.0);
+}
+
+/* Line-dual-plane intersection (range based).
+ * Line defined by pos and dir; Duel-plane defined by base and height
+ * (assumes plane normal is up vec3(0.0, 1.0, 0.0)).
+ * Returns vec2(start, dist) where start is distance from pos along dir
+ * (first entry of either plane); dist is distance through to other plane
+ * (start to exit).
+ * Note: a dist of zero (vec2(x, 0.0)) indicates no intersection.
+*/
 vec2 vbox_intersect(vec3 pos, vec3 dir, vec3 base, float height) {
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	float rel_y = pos.y - base.y;
@@ -236,3 +258,5 @@ vec2 vbox_intersect(vec3 pos, vec3 dir, vec3 base, float height) {
 	if (top < 0.0) return vec2(0.0, bottom);
 	return vec2(0.0, top);
 }
+
+#endif  // FLAT_WORLD

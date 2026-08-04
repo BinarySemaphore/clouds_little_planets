@@ -1,6 +1,6 @@
 vec2 lat_long_from_pos_to_uv(vec3 pos) {
 	#ifdef FLAT_WORLD
-		return vec2(pos.x, pos.z) / (FLAT_WORLD_DEF_DIAMETER * config.data.cl_global_scale);
+		return vec2(pos.x, pos.z) / (FLAT_WORLD_MASK_DIV * config.data.cl_global_scale);
 	#else
 		vec3 norm_pos = normalize(pos);
 		float lat_angle = asin(-norm_pos.y / 1.0);
@@ -100,12 +100,13 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 
 	#ifdef FLAT_WORLD
 		vec3 up = vec3(0.0, 1.0, 0.0);
-		float radius = 0.5 * FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt;
-		float planet_occlusion_atten = 0.05;
+		float planet_occlusion_atten = 0.05 * config.data.radius;
 	#else
-		float radius = config.data.radius;
 		float planet_occlusion_atten = 0.05 * config.data.radius;
 	#endif
+
+	vec2 hit;
+	vec2 planet_hit;
 
 	if (config.data.cloud_atmo_light_enable) {
 		// vec2 exit = sphere_intersect(start, dir, config.data.pos, config.data.radius + config.data.atmo_alt);
@@ -132,18 +133,27 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 
 			scatter_lumin = 0.0;
 			//l_dir = normalize(config.data.light_pos - pos);
-			vec2 hit;
-			vec2 planet_hit;
 			#ifdef FLAT_WORLD
-				hit = vbox_intersect(pos, l_dir, config.data.pos, config.data.atmo_alt);
-				planet_hit = vec2(0.0);
-				planet_hit.y = plane_intersect(pos, l_dir, up * config.data.radius, up);
+				// hit = vbox_intersect(pos, l_dir, config.data.pos, config.data.atmo_alt);
+				// hit.y = clamp(hit.y, 0.0, config.data.radius * 2.0 * config.data.cl_global_scale);// / config.data.atmo_alt;
+				// if (hit.y <= 0.0) {
+				// 	hit.y = config.data.radius * 2.0 * config.data.cl_global_scale;
+				// }
+				// hit.y = max_travel_dist + 10.0;
+				hit.y = plane_intersect(pos, l_dir, config.data.pos + vec3(0.0, config.data.atmo_alt, 0.0), vec3(0.0, 1.0, 0.0));
+				hit.y = clamp(hit.y, 0.0, config.data.radius * 2.0 * config.data.cl_global_scale);// config.data.radius * 3.0);
+				if (hit.y < 0.0) {
+					hit.y = config.data.radius * 2.0 * config.data.cl_global_scale;
+				}
+				planet_hit = plane_penetration(pos, l_dir, config.data.pos, config.data.radius * 2.0);
+				planet_hit.x = 0.0;
+				// planet_hit.y = planet_occlusion_atten + 1.0;
 			#else
 				hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius + config.data.atmo_alt);
 				planet_hit = sphere_intersect(pos, l_dir, config.data.pos, config.data.radius);
 			#endif
 			float atmo_dist_exit = hit.y;
-			float atmo_light_atten = atmo_approx_attenuation(atmo_dist_exit * 0.5);
+			float atmo_light_atten = atmo_approx_attenuation(atmo_dist_exit);
 			float atmo_atten = atmo_approx_attenuation(travel_dist);
 			if (planet_hit.y < planet_occlusion_atten) {
 				for (int j = 1; j <= 5; j++) {
@@ -159,6 +169,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 				atmo_dist_exit = planet_hit.x;
 				scatter_lumin = 0.0;
 			}
+			//scatter_lumin = 1.0;
 			if (config.data.cloud_atmo_light_enable) {
 				// Get color from star in sky, sky towards star (sans star), and overhead sky
 				// Should add up to 1.0 when combined (so these are percents from each);
@@ -237,10 +248,11 @@ void main() {
 		}
 		if (hit.y > 0.0 && hit.x <= depth_lim) {
 			start_pos = cam_pos + dir * hit.x;
-			max_travel_dist = min(
-				min(depth_lim - hit.x, hit.y),
-				FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt
-			);
+			max_travel_dist = min(depth_lim - hit.x, hit.y);
+			// max_travel_dist = min(
+			// 	min(depth_lim - hit.x, hit.y),
+			// 	2.0 * (config.data.radius + config.data.atmo_alt)
+			// );
 			is_valid = true;
 		}
 	#else

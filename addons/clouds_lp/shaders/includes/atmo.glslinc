@@ -44,12 +44,10 @@ vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 	float alt_start_overhead_scatter = config.data.atmo_alt * 1.5 / config.data.atmo_density_falloff;
 
 	float star_in_view = 1.0;
-	vec2 hit_planet = vec2(0.0);
 	#ifdef FLAT_WORLD
-		vec3 up = vec3(0.0, 1.0, 0.0);
-		hit_planet.y = plane_intersect(start, dir, config.data.pos, up);
+		vec2 hit_planet = plane_penetration(start, dir, config.data.pos, MAX_DIST);
 	#else
-		hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
+		vec2 hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
 	#endif
 	if (hit_planet.y > 0.0) {
 		star_in_view = 0.0;
@@ -82,9 +80,10 @@ vec4 atmo_color(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 		total_density += density;
 
 		scattering = 1.0;
-		hit_planet = vec2(0.0);
 		#ifdef FLAT_WORLD
-			hit_planet.y = plane_intersect(pos, to_light, config.data.pos, up);
+			// plane check not required, just lean on dot-angles
+			//hit_planet = plane_penetration(pos, to_light, config.data.pos, config.data.radius);
+			hit_planet.y = 0.0;
 		#else
 			hit_planet = sphere_intersect(pos, to_light, config.data.pos, config.data.radius);
 		#endif
