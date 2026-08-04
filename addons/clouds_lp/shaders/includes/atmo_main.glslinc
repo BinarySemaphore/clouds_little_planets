@@ -18,12 +18,10 @@ void main() {
 	vec4 color = imageLoad(inout_image, uv);
 	// color = vec4(vec3(depth_lim), 1.0);
 
-	#ifdef FLAT_WORLD
 	// Depth past render far plane
 	if (depth_lim >= scene.data.z_far - 0.1) {
 		depth_lim = MAX_DIST;
 	}
-	#endif
 
 	bool is_valid = false;
 	vec2 hit;
@@ -62,11 +60,17 @@ void main() {
 	#endif
 
 	if (is_valid) {
+		bool star_visible = true;
+		if (depth_lim < MAX_DIST) {
+			star_visible = false;
+		}
+
 		if (config.data.atmo_enable) {
-			vec4 atmo_color = atmo_color(start_pos, dir, max_travel_dist, 10, true);
+			vec4 atmo_color = atmo_draw(start_pos, dir, max_travel_dist, 10, star_visible);
 			color.rgb = mix(color.rgb, atmo_color.rgb, atmo_color.a);
 		}
 
+		// TODO: discard cloud pixel if in_depth_sampler < in_depth_clouds
 		if (config.data.cloud_enable) {
 			vec4 cloud_color = imageLoad(in_image_clouds, uv);
 			color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a);
