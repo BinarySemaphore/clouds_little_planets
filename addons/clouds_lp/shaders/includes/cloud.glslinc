@@ -88,7 +88,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 	#ifdef FLAT_WORLD
 		vec3 up = vec3(0.0, 1.0, 0.0);
 		float planet_occlusion_atten = 0.05;
-		float near_max_light_dist = 0.9 * atmo_get_max_attenuation();
+		float near_max_light_dist = 0.75 * atmo_get_max_attenuation();
 	#else
 		float planet_occlusion_atten = 0.05 * config.data.radius;
 	#endif

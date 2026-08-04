@@ -12,9 +12,9 @@
 script = ExtResource("7_8t4yt")
 atmo_height = 50.0
 atmo_p_overhead_scatter = 3.5
-atmo_s_haze_start = 0.474
-atmo_s_sunset_start = 0.3999999999999999
-atmo_s_sunset_max = -0.30000000000000004
+atmo_s_haze_max = 4.0
+atmo_s_sunset_start = 0.5699999999999998
+atmo_s_sunset_max = -0.31999999999999995
 cld_s_light_scatter = 1.5
 cld_s_density_factor = 1.5
 cld_a_enabled = false
