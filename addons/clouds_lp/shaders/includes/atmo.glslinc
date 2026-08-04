@@ -21,7 +21,7 @@ float atmo_density(float alt_normal) {
 
 float atmo_get_max_attenuation() {
 	#ifdef FLAT_WORLD
-		return (FLAT_WORLD_ATTEN_DIV * config.data.cl_global_scale + config.data.atmo_alt)/ 
+		return (FLAT_WORLD_ATTEN_DIV * config.data.atmo_alt + config.data.atmo_alt)/ 
 				ATMO_LIGHT_ATTEN_SCALAR;
 	#else
 		return (config.data.radius + config.data.atmo_alt) / 
@@ -33,7 +33,7 @@ float atmo_approx_attenuation(float dist) {
 	#ifdef FLAT_WORLD
 		float lin_atten = 1.0 - clamp(
 			dist * config.data.atmo_density * ATMO_LIGHT_ATTEN_SCALAR /
-			(FLAT_WORLD_ATTEN_DIV * config.data.cl_global_scale + config.data.atmo_alt),
+			(FLAT_WORLD_ATTEN_DIV * config.data.atmo_alt + config.data.atmo_alt),
 			0.0, 1.0);
 	#else
 		float lin_atten = 1.0 - clamp(

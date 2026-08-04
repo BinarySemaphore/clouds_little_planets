@@ -16,7 +16,6 @@ void main() {
 	vec3 dir = ray_screen(scene.data.inv_view_matrix, scene.data.inv_projection_matrix, screen_uv);
 	float depth_lim = depth_planar_linear / dot(dir, cam_forward);
 	vec4 color = imageLoad(inout_image, uv);
-	// color = vec4(vec3(depth_lim), 1.0);
 
 	// Depth past render far plane
 	if (depth_lim >= scene.data.z_far - 0.1) {
@@ -37,10 +36,6 @@ void main() {
 		if (hit.y > 0.0 && hit.x <= depth_lim) {
 			start_pos = cam_pos + dir * hit.x;
 			max_travel_dist = min(depth_lim - hit.x, hit.y);
-			// max_travel_dist = min(
-			// 	min(depth_lim - hit.x, hit.y),
-			// 	2.0 * (config.data.radius + config.data.atmo_alt)
-			// );
 			is_valid = true;
 		}
 	#else
@@ -70,11 +65,13 @@ void main() {
 			color.rgb = mix(color.rgb, atmo_color.rgb, atmo_color.a);
 		}
 
-		// TODO: discard cloud pixel if in_depth_sampler < in_depth_clouds
 		if (config.data.cloud_enable) {
-			vec4 cloud_color = imageLoad(in_image_clouds, uv);
-			color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a);
-			color.a = mix(color.a, 1.0, cloud_color.a);
+			float cloud_depth = imageLoad(in_depth_clouds, uv).r;
+			if (cloud_depth <= depth_lim) {
+				vec4 cloud_color = imageLoad(in_image_clouds, uv);
+				color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a);
+				color.a = mix(color.a, 1.0, cloud_color.a);
+			}
 		}
 	}
 

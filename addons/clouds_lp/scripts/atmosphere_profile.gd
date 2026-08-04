@@ -5,8 +5,7 @@ extends Resource
 @export var planet_has_atmosphere := true
 @export var planet_has_clouds := true
 ## Planet radius.[br]
-## For [member CloudsLP.flat_world] this adjusts some distance-based
-## effects (cloud light attenuation, haze, sunest intensity, etc..).[br]
+## Ignored when [member CloudsLP.flat_world] enabled.
 @export var planet_radius := 50.0
 @export_group("Atmosphere", "atmo")
 ## Max altitude from surface.
