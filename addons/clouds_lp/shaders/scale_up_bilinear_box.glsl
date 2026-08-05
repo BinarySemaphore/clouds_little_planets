@@ -1,6 +1,7 @@
 #[compute]
 #version 450
 
+#include "./includes/utils.glslinc"
 #include "./includes/struct_ubo_godot.glslinc"
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
@@ -27,29 +28,29 @@ void main() {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 	if (uv.x >= scene.data.viewport_size.x || uv.y >= scene.data.viewport_size.y) return;
 
-	vec2 p = (vec2(uv) + 0.5) / params.scale_down - 0.5;
+
+	vec2 ratio = params.size / scene.data.viewport_size;
+	vec2 p = (vec2(uv) + 0.5) * ratio - 0.5;
 	vec2 f = fract(p);
 	ivec2 scaled_uv = ivec2(floor(p));
+
 	ivec2 uv_min = ivec2(0);
 	ivec2 uv_max = ivec2(params.size) - ivec2(1);
 	ivec2 scaled_uv_00 = clamp(scaled_uv, uv_min, uv_max);
 	ivec2 scaled_uv_10 = clamp(scaled_uv + ivec2(1, 0), uv_min, uv_max);
 	ivec2 scaled_uv_01 = clamp(scaled_uv + ivec2(0, 1), uv_min, uv_max);
 	ivec2 scaled_uv_11 = clamp(scaled_uv + ivec2(1, 1), uv_min, uv_max);
-	
-	vec4 a = imageLoad(in_depth, scaled_uv_00);
-	vec4 b = imageLoad(in_depth, scaled_uv_10);
-	vec4 c = imageLoad(in_depth, scaled_uv_01);
-	vec4 d = imageLoad(in_depth, scaled_uv_11);
-	vec4 smoothed = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 
-	imageStore(out_depth, uv, smoothed);
+	vec4 a = imageLoad(in_image, scaled_uv_00);
+	vec4 b = imageLoad(in_image, scaled_uv_10);
+	vec4 c = imageLoad(in_image, scaled_uv_01);
+	vec4 d = imageLoad(in_image, scaled_uv_11);
+	vec4 out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 
-	a = imageLoad(in_image, scaled_uv_00);
-	b = imageLoad(in_image, scaled_uv_10);
-	c = imageLoad(in_image, scaled_uv_01);
-	d = imageLoad(in_image, scaled_uv_11);
-	smoothed = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+	imageStore(out_image, uv, out_color_image_mix);
 
-	imageStore(out_image, uv, smoothed);
+	// Depth should be scaled up raw (always)
+	vec4 out_color_depth = imageLoad(in_depth, ivec2(floor(vec2(uv) * ratio)));
+
+	imageStore(out_depth, uv, out_color_depth);
 }

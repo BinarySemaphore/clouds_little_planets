@@ -4,7 +4,7 @@
 
 [resource]
 script = ExtResource("1_r5c8g")
-min_step_size = 0.03001
+step_size = 0.03001
 step_scalar = 1.05
 deband_noise = 0.2
 deband_noise_scalar = 0.6

@@ -1,152 +1,144 @@
-float atmo_density(float altitude) {
-	float alt_normal = altitude / config.data.atmo_alt;
-	return clamp(exp(-config.data.density_falloff * alt_normal), 0.0, 1.0);
-}
-
 float alt_from_pos(vec3 pos) {
 	vec3 rel_pos = pos - config.data.pos;
 	#ifdef FLAT_WORLD
-		return clamp(rel_pos.y - config.data.radius, 0.0, config.data.atmo_alt);
+		return clamp(rel_pos.y, 0.0, config.data.atmo_alt);
 	#else
 		return clamp(length(rel_pos) - config.data.radius, 0.0, config.data.atmo_alt);
 	#endif
 }
 
-vec4 color_through_atmo(vec3 start, vec3 dir, float dist, int samples, bool no_direct_light) {
+vec3 planet_norm_from_pos(vec3 pos) {
+	#ifdef FLAT_WORLD
+		return vec3(0.0, 1.0, 0.0);
+	#else
+		return normalize(pos - config.data.pos);
+	#endif
+}
+
+float atmo_density(float alt_normal) {
+	return exp(-alt_normal * config.data.atmo_density_falloff);
+}
+
+float atmo_get_max_attenuation() {
+	#ifdef FLAT_WORLD
+		return (FLAT_WORLD_ATTEN_DIV * config.data.atmo_alt + config.data.atmo_alt)/ 
+				ATMO_LIGHT_ATTEN_SCALAR;
+	#else
+		return (config.data.radius + config.data.atmo_alt) / 
+			ATMO_LIGHT_ATTEN_SCALAR;
+	#endif
+}
+
+float atmo_approx_attenuation(float dist) {
+	#ifdef FLAT_WORLD
+		float lin_atten = 1.0 - clamp(
+			dist * config.data.atmo_density * ATMO_LIGHT_ATTEN_SCALAR /
+			(FLAT_WORLD_ATTEN_DIV * config.data.atmo_alt + config.data.atmo_alt),
+			0.0, 1.0);
+	#else
+		float lin_atten = 1.0 - clamp(
+			dist * config.data.atmo_density * ATMO_LIGHT_ATTEN_SCALAR /
+			(config.data.radius + config.data.atmo_alt),
+			0.0, 1.0);
+	#endif
+	return lin_atten * lin_atten;
+}
+
+vec4 atmo_draw(vec3 start, vec3 dir, float dist, int samples, bool solar) {
 	if (dist <= 0.0) return vec4(0.0);
-	start *= rand_near_one(0.0001);
-	float light_wrap = 0.05;
-	float atmo_light_wrap = light_wrap;
-	float star_fade = 1.0 - config.data.star_glow;
 
 	vec4 color = vec4(0.0);
-
-	#ifdef FLAT_WORLD
-		vec3 up = vec3(0.0, 1.0, 0.0);  // Used for flat_world
-		float atmo_radius = FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt;
-	#else
-		float atmo_radius = config.data.radius + config.data.atmo_alt;
-	#endif
-
-	float step_size = dist / float(samples - 1);
-	float travel_dist = 0.0;
-	float direct_light = 1.0;
-	float total_density = 0.0;
+	vec3 to_light = normalize(config.data.light_pos - start);
 	float start_altitude = alt_from_pos(start);
-	float r_to_m_line = 0.6;
-	float end_line = -0.3;
+	float step_size = dist / float(samples - 1);
+	float travel_dist = step_size;
+	float total_density = 0.0;
+	float star_fade = 1.0 - config.data.atmo_star_glow;
+	float haze_start = config.data.atmo_alt * config.data.atmo_haze_start;
+	float haze_max = config.data.atmo_alt * config.data.atmo_haze_max;
+	float planet_occlusion = min(config.data.atmo_alt * 10.0, config.data.radius * 0.5);
+	float quarter_atmo_alt = config.data.atmo_alt * 0.25;
+	float alt_start_overhead_scatter = config.data.atmo_alt * 1.5 / config.data.atmo_density_falloff;
 
-	// Direct light planet occlusion
 	vec2 hit_planet;
-	if(no_direct_light) {
-		direct_light = 0.0;
-	} else {
-		float wrap_lim = light_wrap * config.data.radius;
-		#ifdef FLAT_WORLD
-			wrap_lim = light_wrap;
-			hit_planet = vec2(0.0);
-			hit_planet.y = plane_intersect(start, dir, up * config.data.radius, up);
-		#else
-			hit_planet = sphere_intersect(start, dir, config.data.pos, config.data.radius);
-		#endif
-		if (hit_planet.y > 0.0) {
-			direct_light = 1.0 - smoothstep(0.0, wrap_lim, hit_planet.y);
-		}
+	float star_in_view = 1.0;
+	// Needed for flat world since horizon is far and likely not occluded by depth pass
+	// For planets, depth should occlude star via solar bool param
+	#ifdef FLAT_WORLD
+		hit_planet = plane_penetration(start, dir, config.data.pos, MAX_DIST);
+	#endif
+	if (hit_planet.y > 0.0) {
+		star_in_view = 0.0;
 	}
-	
-	vec3 pos, rel_pos, planet_norm, to_light, sample_color;
-	vec2 hit_atmo;
-	float total_dist, altitude, altitude_normal, density, eng_from_light,
-		eng_from_star, from_light, path_light, up_align, overhead_scatter,
-		r1, r2, m1, m2;
-	for (int i = 0; i < samples; i++) {
-		pos = start + travel_dist * dir;
-		rel_pos = pos - config.data.pos;
-		#ifdef FLAT_WORLD
-			altitude = rel_pos.y - config.data.radius;
-		#else
-			altitude = length(rel_pos) - config.data.radius;
-		#endif
-		if (altitude < -1.0) {
-			travel_dist += step_size;
-			continue;
-		}
-		altitude_normal = altitude / config.data.atmo_alt;
-		to_light = normalize(config.data.light_pos - pos);
-		density = exp(-altitude_normal * config.data.density_falloff);
 
-		#ifdef FLAT_WORLD
-			planet_norm = up;
-		#else
-			planet_norm = normalize(rel_pos);
-		#endif
+	vec3 pos, planet_norm, sample_color;
+	float altitude, altitude_norm, overhead_scatter, density;
+	float from_light, path_light, up_align;
+	float scattering, light_star, light_scatter, light_total;
+	float horizon, sunset, r1, r2, m1, m2;
+	for(int i = 1; i < samples; i++) {
+		pos = start + dir * travel_dist;
+		altitude = alt_from_pos(pos);
+		altitude_norm = altitude / config.data.atmo_alt;
+
+		planet_norm = planet_norm_from_pos(pos);
 		from_light = dot(planet_norm, to_light);
 		path_light = dot(dir, to_light);
 		up_align = dot(dir, planet_norm);
+
 		overhead_scatter = clamp(
-			0.5 * clamp(from_light, 0.0, 1.0)  // Positioning
-			* clamp(up_align + 0.3, 0.0, 1.0)  // Apply up and horizon
-			* smoothstep(config.data.atmo_alt * 1.5 / config.data.density_falloff, 0.0, start_altitude),  // Primary driven by camera altitude
+			clamp(from_light, 0.0, 1.0) *  // Positioning
+			clamp(up_align + 0.3, 0.0, 1.0) *  // Apply up and horizon
+			smoothstep(alt_start_overhead_scatter, 0.0, start_altitude),  // Primary driven by camera altitude
 			0.0, 1.0
 		);
 
-		#ifdef FLAT_WORLD
-			total_density += density * step_size / config.data.atmo_alt;
-		#else
-			total_density += density * step_size;
-		#endif
-		total_density += (1.0 - density) * overhead_scatter;
+		density = atmo_density(altitude_norm);
+		density += (1.0 - density) * overhead_scatter * config.data.atmo_overhead_scatter;
+		total_density += density;
 
-		eng_from_star = 20.0 * direct_light * smoothstep(star_fade, 1.0, path_light);
-		eng_from_light =
-			clamp(from_light + atmo_light_wrap, 0.0, 1.0)
-			+ eng_from_star;
-		if (altitude < config.data.atmo_alt - config.data.light_pen) {
-			float drown_out = smoothstep(0.0, config.data.light_pen, config.data.atmo_alt - config.data.light_pen - altitude);
-			eng_from_light *= -1.0 * drown_out;
-			eng_from_star *= -1.0 * drown_out;
+		scattering = 1.0;
+		#ifdef FLAT_WORLD
+			// plane check not required, just lean on dot-angles (result is same)
+			//hit_planet = plane_penetration(pos, to_light, config.data.pos, config.data.radius);
+			hit_planet.y = 0.0;
+		#else
+			hit_planet = sphere_intersect(pos, to_light, config.data.pos, config.data.radius);
+		#endif
+		if (hit_planet.y > 0.0) {
+			scattering = 1.0 - smoothstep(0.0, planet_occlusion, hit_planet.y);
 		}
 
-		// Reyleigh scatter
-		// Primary
-		r1 = smoothstep(r_to_m_line * 0.25, 1.0, from_light);
-		r2 = 0.25 * clamp(abs(up_align) + 0.5, 0.0, 1.0)
-			// Positioning
-			* smoothstep(end_line * 0.5, r_to_m_line * 0.5, from_light);
-		// Mie scatter
-		// Primary
-		#ifdef FLAT_WORLD
-			m1 = (1.0 - pow(abs(from_light), 0.25))
-				* clamp(travel_dist * 20.0 / atmo_radius, 0.0, 1.0)
-				// Cutoffs (upper/lower)
-				* (1.0 - clamp(up_align + 0.5, 0.0, 1.0))
-				* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))
-				// Positioning
-				* smoothstep(r_to_m_line, 0.0, from_light)
-				* smoothstep(end_line, r_to_m_line * 0.25, from_light);
-		#else
-			m1 = 0.5 * clamp(travel_dist * travel_dist/ atmo_radius, 0.0, 1.0)
-				// Cutoffs (upper/lower)
-				* (1.0 - clamp(up_align, 0.0, 1.0))
-				* (1.0 - 4.0 * clamp(-up_align, 0.0, 1.0))
-				// Positioning
-				* smoothstep(r_to_m_line, 0.0, from_light)
-				* smoothstep(end_line, r_to_m_line * 0.5, from_light);
-		#endif
-		// Solar
-		//m1 = 1.0 - pow(abs(from_light), 0.2);
-		m2 = eng_from_star * 10.0 * travel_dist / atmo_radius;
+		light_star = 0.0;
+		if (solar) {
+			light_star = 20.0 * star_in_view * smoothstep(star_fade, 1.0, path_light);
+		}
+		light_scatter = scattering * smoothstep(-0.2, 0.5, from_light);
+		light_total = light_star + light_scatter;
 
-		sample_color = config.data.color_star * eng_from_light;
-		sample_color -= config.data.rayleigh_coefs * (r1 + r2);
-		sample_color -= config.data.mie_coefs * (m1 + m2);
+		horizon = smoothstep(haze_start, haze_max, travel_dist);
+		sunset = smoothstep(config.data.atmo_sunset_start, config.data.atmo_sunset_max, from_light);
+		// r1 = 0.0; r2 = 0.0; m1 = 0.0; m2 = 0.0;
+		// Primary
+		r1 = smoothstep(haze_start, quarter_atmo_alt, travel_dist);
+		// Horizon (inverted top down fill)
+		r2 = (1.0 - r1) * (1.0 - horizon * 0.25) * (1.0 - sunset);
+		// Star-line
+		m1 = 2.0 * light_star * sunset * horizon;
+		// Horizon
+		m2 = sunset * horizon;
+		
+		sample_color = config.data.atmo_color_star * light_total;
+		sample_color -= config.data.atmo_rayleigh_coefs * light_scatter *(r1 + r2);
+		sample_color -= config.data.atmo_mie_coefs * (m1 + m2);
 		color.rgb += sample_color;
-
+		
 		travel_dist += step_size;
 	}
 
 	color.rgb = clamp(color.rgb / float(samples), vec3(0.0), vec3(5.0));
-	color.a = 1.0 - exp(-total_density);
+	// Division by atmo_alt is not correct accumulation, but I think it looks better
+	color.a = clamp(1.0 - exp(-total_density * step_size * config.data.atmo_density / config.data.atmo_alt), 0.0, 1.0);
 
 	return color;
 }

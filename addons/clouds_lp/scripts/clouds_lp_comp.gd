@@ -3,13 +3,19 @@ class_name CloudsLP
 extends CompositorEffect
 
 ## Print debug messages to log/output.[br]
-## [color=white]Note:[/color] Errors are still logged while debug is disabled.
+## [br][color=white]Note:[/color] Errors are still logged while debug is
+## disabled.
 @export var debug_output := false
-## [code]Editor[/code]-only cloud rendering resolution down scaling ratio.[br]
+## [code]In-Editor[/code] Cloud rendering resolution down scaling ratio.[br]
 ## Does not impact atmoshpere.[br]
-## [color=yellow]Warning:[/color] Major performance impact closer to
+## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
-## [br]For more performance control, see [color=white]Cloud Quality[/color].
+## [br][color=white]Note:[/color] Recommend lower resolutions for editor to
+## reduce resouce load while working, compositor can be toggled on/off with
+## [member CloudsLP.enabled] (near bottom).[br] 
+## [br][color=white]Note:[/color] For in-game resolution, see
+## [member CloudsLP.scale_down_power].
+## For more performance control, see [member CloudsLP.cloud_quality] profile.
 @export_enum("Native", "Half", "Quarter", "Eighth", "Sixteenth", "Thirtysecond") var scale_down_power_editor: int = 3:
 	set(value):
 		scale_down_power_editor = value
@@ -18,11 +24,13 @@ extends CompositorEffect
 			_scaled_down = 1 << scale_down_power_editor
 			_longterm_uniforms_good = false
 			_mutex.unlock()
-## Cloud rendering resolution down scaling ratio.[br]
+## [code]In-Game[/code] Cloud rendering resolution down scaling ratio.[br]
 ## Does not impact atmoshpere.[br]
-## [color=yellow]Warning:[/color] Major performance impact closer to
+## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
-## [br]For more performance control, see [color=white]Cloud Quality[/color].
+## [br][color=white]Note:[/color] For more performance control, see
+## [member CloudsLP.cloud_quality] profile.[br]
+## [br][color=white]Note:[/color] Changing this will reallocate buffer data.
 @export_enum("Native", "Half", "Quarter", "Eighth", "Sixteenth", "Thirtysecond") var scale_down_power: int = 2:
 	set(value):
 		scale_down_power = value
@@ -31,7 +39,8 @@ extends CompositorEffect
 			_scaled_down = 1 << scale_down_power
 			_longterm_uniforms_good = false
 			_mutex.unlock()
-## Force reload of shader files.
+## Reload shader files once.[br]
+## Auto resets back to [code]false[/code] (it's like a button).
 @export var reload := false:
 	set(value):
 		reload = false
@@ -39,7 +48,7 @@ extends CompositorEffect
 			_mutex.lock()
 			_reload_shaders = true
 			_mutex.unlock()
-## Write PNGs (see Output) for debugging.
+### Write PNGs (see Output) for debugging.
 #@export var write_debug := false:
 	#set(value):
 		#write_debug = false
@@ -47,22 +56,27 @@ extends CompositorEffect
 			#_mutex.lock()
 			#_req_write_debug = true
 			#_mutex.unlock()
-## Force disable atmosphere.
-## Overrides [code]Profile[/code].
+## Render atmosphere.[br]
+## Overrides [member CloudsLP.profile].
 @export var atmo_enabled := true
-## Force disable clouds.
-## Overrides [code]Profile[/code].
+## Render clouds.[br]
+## Overrides [member CloudsLP.profile].
 @export var cloud_enabled := true
-## Force disable cloud atmospheric lighting.[br]
-## Overrides [code]Profile[/code].
+## Render cloud atmospheric lighting.[br]
+## Overrides [member CloudsLP.profile].
 @export var cloud_atmo_light_enabled := true
+## Reset cloud animation time back to [code]0[/code].[br]
+## Auto resets back to [code]false[/code] (it's like a button).[br]
+## [br][color=white]Note:[/color] See [member CloudsLP.profile] > [code]Clouds > Animation[/code] section for
+## animation configuration.
 @export var cloud_animation_reset := false:
 	set(value):
 		cloud_animation_reset = false
 		if value:
-			_anim_time = 0.0
-## Force flat world (Y axis is altitude).[br]
-## [code]Profile.Planet.Radius[/code] will be used as sea-level.
+			_cloud_anim_time = 0.0
+## Force flat world ([code]Y[/code] axis is altitude).[br]
+## [member CloudsLP.position] will be used as sea-level.[br]
+## [br][color=white]Note:[/color] Changing this will reload shaders.
 @export var flat_world := false:
 	set(value):
 		flat_world = value
@@ -70,17 +84,21 @@ extends CompositorEffect
 		_reload_shaders = true
 		_mutex.unlock()
 ## Optional distance limit, useful for simple cloud sampling.[br]
-## [color=white]Note:[/color] ignored for values <= 0.0.
+## [br][color=white]Note:[/color] ignored for values <= [code]0.0[/code].
 @export var max_distance := 0.0
+## Planet position in world-space.[br]
+## For [member CloudsLP.flat_world] the [code]Y[/code] component is sea-level.
 @export var position := Vector3.ZERO
 ## [code]Light3D[/code] to drive lighting color and positioning.[br]
-## [color=white]Note:[/color] For non-directional lights, range and attenuation
-## are ignored.[br]
+## [br][color=white]Note:[/color] For non-directional lights, range and
+## attenuation are ignored.[br]
 ## [br][color=yellow]Warning:[/color] The [code]Light3D[/code] should not be a
 ## child of the compositor's subtree. Compositor scene awareness is limited,
 ## so a relative path must be resolved to find the actual node instance. This
 ## is done during initialization or anytime the [code]Light3D[/code]'s path
-## changes.
+## changes.[br]
+## [br][color=white]Note:[/color] Assigning a different light source will
+## reload shadders.
 @export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath:
 	set(value):
 		light_source = value
@@ -89,15 +107,20 @@ extends CompositorEffect
 		_reload_shaders = true
 		_mutex.unlock()
 ## Cloud Quality Profile.[br]
-## [color=yellow]Warning:[/color] Performance impacting.[br]
-## [br]See [color=white]Scale Down Power[/color] for more performance control.
+## [br][color=yellow]Warning:[/color] Performance impacting.[br]
+## [br][color=white]Note:[/color] See [member CloudsLP.scale_down_power] for
+## more performance control.[br]
+## [br][color=white]Note:[/color] Assigning a different quality profile will
+## reload shadders.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
 		cloud_quality = value
 		_mutex.lock()
 		_reload_shaders = true
 		_mutex.unlock()
-## Atmosphere and Cloud Profile.
+## Atmosphere and Cloud Profile.[br]
+## [br][color=white]Note:[/color] Assigning a different profile will reload
+## shadders.
 @export var profile: AtmosphereProfile:
 	set(value):
 		profile = value
@@ -144,7 +167,7 @@ var _req_write_debug := false
 var _reload_shaders := false
 var _longterm_uniforms_good := false
 var _scaled_down := 1
-var _anim_time := 0.0
+var _cloud_anim_time := 0.0
 var _mutex := Mutex.new()
 var _light_source: Light3D
 var _last_size: Vector2i
@@ -257,7 +280,7 @@ func _load_and_init() -> bool:
 		_push_error("Missing cloud quality profile (check Cloud Quality)")
 		return false
 	
-	if not (profile.ns_height and profile.ns_mask and profile.ns_large and profile.ns_medium and profile.ns_small and profile.ns_wisp):
+	if not (profile.cld_ns_height and profile.cld_ns_mask and profile.cld_ns_large and profile.cld_ns_medium and profile.cld_ns_small and profile.cld_ns_wisp):
 		_push_error("Missing textures (check Profile > Clouds > Noise)")
 		return false
 	
@@ -305,9 +328,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_cleanup(false, true)  # Cleanup data only
 	_print_debug("Allocating longterm data...")
 	
-	if not _config_data or _config_data.size() != 256:
+	if not _config_data or _config_data.size() != 272:
 		_config_data = PackedByteArray()
-		_config_data.resize(256)
+		_config_data.resize(272)
 	
 	var sampler_linear_state := RDSamplerState.new()
 	sampler_linear_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
@@ -473,37 +496,37 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 	height_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	height_uniform.binding = 10
 	height_uniform.add_id(_sampler_linear_nr)
-	height_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.ns_height.get_rid()))
+	height_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.cld_ns_height.get_rid()))
 	
 	var noise_mask_uniform := RDUniform.new()
 	noise_mask_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	noise_mask_uniform.binding = 11
 	noise_mask_uniform.add_id(_sampler_linear)
-	noise_mask_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.ns_mask.get_rid()))
+	noise_mask_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.cld_ns_mask.get_rid()))
 	
 	var noise_l_uniform := RDUniform.new()
 	noise_l_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	noise_l_uniform.binding = 12
 	noise_l_uniform.add_id(_sampler_linear)
-	noise_l_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.ns_large.get_rid()))
+	noise_l_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.cld_ns_large.get_rid()))
 	
 	var noise_m_uniform := RDUniform.new()
 	noise_m_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	noise_m_uniform.binding = 13
 	noise_m_uniform.add_id(_sampler_linear)
-	noise_m_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.ns_medium.get_rid()))
+	noise_m_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.cld_ns_medium.get_rid()))
 	
 	var noise_s_uniform := RDUniform.new()
 	noise_s_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	noise_s_uniform.binding = 14
 	noise_s_uniform.add_id(_sampler_linear)
-	noise_s_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.ns_small.get_rid()))
+	noise_s_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.cld_ns_small.get_rid()))
 	
 	var noise_wisp_uniform := RDUniform.new()
 	noise_wisp_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
 	noise_wisp_uniform.binding = 15
 	noise_wisp_uniform.add_id(_sampler_linear)
-	noise_wisp_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.ns_wisp.get_rid()))
+	noise_wisp_uniform.add_id(RenderingServer.texture_get_rd_texture(profile.cld_ns_wisp.get_rid()))
 	#endregion
 	
 	var view_count := render_scene_buffers.get_view_count()
@@ -582,38 +605,20 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 			if _req_write_debug:
 				_print_debug("Try save...")
 				_req_write_debug = false
-				_debug_save_rd_texture.call_deferred(_clouds_high, size, "color")
-				_debug_save_rd_texture.call_deferred(_depth_high, size, "depth", Image.FORMAT_RH)
+				_debug_save_rd_texture.call_deferred(_clouds_low, _scaled_size, "cloud_low_color", Image.FORMAT_RGBA16)
+				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "cloud_low_depth", Image.FORMAT_RH)
+				_debug_save_rd_texture.call_deferred(_clouds_high, size, "cloud_high_color")
+				_debug_save_rd_texture.call_deferred(_depth_high, size, "cloud_high_depth", Image.FORMAT_RH)
 			_mutex.unlock()
-
-
-func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
-	if not _rd:
-		_push_error("No Render Device")
-		return
-	if not tex_rid.is_valid():
-		_push_error("Invalid RID for image")
-		return
-	var image_data := _rd.texture_get_data(tex_rid, 0)
-	if not image_data:
-		_push_error("No image data for %s" % tex_rid)
-		return
-	var test_image := Image.create_from_data(size.x, size.y, false, format, image_data)
-	if not test_image:
-		_push_error("No image found :(")
-		return
-	var filename := "user://%s.png" % fname
-	test_image.save_png(filename)
-	_print_debug("Saved to '%s'" % filename)
 
 
 func _update_config_data() -> void:
 	var idx := 0
 	var linear_color: Color
 	
-	if profile.anim_enabled:
-		if not profile.anim_pausable or not (Engine.get_main_loop() as SceneTree).paused:
-			_anim_time += -1.0 if profile.anim_reverse else 1.0
+	if profile.cld_a_enabled:
+		if not profile.cld_a_pausable or not (Engine.get_main_loop() as SceneTree).paused:
+			_cloud_anim_time += -1.0 if profile.cld_a_reverse else 1.0
 	
 	var light_position: Vector3
 	if _light_source:
@@ -642,64 +647,64 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, profile.planet_radius + z_clip_offset); idx += 4
 	
 	_config_data.encode_float(idx, profile.atmo_height); idx += 4
-	_config_data.encode_float(idx, profile.cld_beers_factor); idx += 4
-	_config_data.encode_float(idx, profile.cld_powder_factor); idx += 4
-	_config_data.encode_float(idx, profile.cld_light_pen); idx += 4
+	_config_data.encode_float(idx, profile.cld_s_beers_factor); idx += 4
+	_config_data.encode_float(idx, profile.cld_s_powder_factor); idx += 4
+	_config_data.encode_float(idx, profile.cld_s_light_pen); idx += 4
 	
-	_config_data.encode_float(idx, profile.ns_adj_threshold.x); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_threshold.y); idx += 4
-	_config_data.encode_float(idx, profile.cld_density_factor); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_layer_falloff); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_threshold.x); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_threshold.y); idx += 4
+	_config_data.encode_float(idx, profile.cld_s_density_factor); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_layer_falloff); idx += 4
 	
-	_config_data.encode_float(idx, profile.ns_adj_scale.x); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_scale.y); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_scale.z); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_global_scale); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_scale.x); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_scale.y); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_scale.z); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_global_scale); idx += 4
 	
-	linear_color = profile.cld_color.srgb_to_linear()
+	linear_color = profile.cld_s_color.srgb_to_linear()
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
 	_config_data.encode_float(idx, linear_color.b); idx += 4
 	_config_data.encode_s32(idx, cloud_quality.steps); idx += 4
 	
 	_config_data.encode_float(idx, cloud_quality.step_scalar); idx += 4
-	_config_data.encode_float(idx, cloud_quality.min_step_size); idx += 4
+	_config_data.encode_float(idx, cloud_quality.step_size); idx += 4
 	_config_data.encode_float(idx, cloud_quality.deband_noise); idx += 4
 	_config_data.encode_float(idx, cloud_quality.deband_noise_scalar); idx += 4
 	
-	_config_data.encode_float(idx, profile.ns_adj_offset.x); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_offset.y); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_offset.z); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_wisp_factor); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_offset.x); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_offset.y); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_offset.z); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_wisp_factor); idx += 4
 	
-	_config_data.encode_float(idx, profile.ns_adj_mask_offset.x); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_mask_offset.y); idx += 4
-	_config_data.encode_float(idx, profile.cld_light_scatter); idx += 4
-	_config_data.encode_float(idx, profile.ns_adj_scale.w); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_mask_offset.x); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_mask_offset.y); idx += 4
+	_config_data.encode_float(idx, profile.cld_s_light_scatter); idx += 4
+	_config_data.encode_float(idx, profile.cld_nsa_scale.w); idx += 4
 	
-	_config_data.encode_float(idx, profile.anim_position_rate.x); idx += 4
-	_config_data.encode_float(idx, profile.anim_position_rate.y); idx += 4
-	_config_data.encode_float(idx, profile.anim_position_rate.z); idx += 4
-	_config_data.encode_float(idx, profile.anim_detail_rate); idx += 4
+	_config_data.encode_float(idx, profile.cld_a_position_rate.x); idx += 4
+	_config_data.encode_float(idx, profile.cld_a_position_rate.y); idx += 4
+	_config_data.encode_float(idx, profile.cld_a_position_rate.z); idx += 4
+	_config_data.encode_float(idx, profile.cld_a_detail_rate); idx += 4
 	
-	_config_data.encode_float(idx, profile.anim_mask_rate.x); idx += 4
-	_config_data.encode_float(idx, profile.anim_mask_rate.y); idx += 4
-	_config_data.encode_float(idx, _anim_time); idx += 4
+	_config_data.encode_float(idx, profile.cld_a_mask_rate.x); idx += 4
+	_config_data.encode_float(idx, profile.cld_a_mask_rate.y); idx += 4
+	_config_data.encode_float(idx, _cloud_anim_time); idx += 4
 	_config_data.encode_float(idx, 0.0); idx += 4
 	
-	linear_color = profile.atmo_color_direct.srgb_to_linear()
-	linear_color = Color.WHITE - linear_color  # Convert to Rayleigh
+	linear_color = profile.atmo_s_color_direct.srgb_to_linear()
+	linear_color = Color.WHITE - linear_color  # Convert to Rayleigh Absorption
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
 	_config_data.encode_float(idx, linear_color.b); idx += 4
-	_config_data.encode_float(idx, profile.atmo_light_pen); idx += 4
+	_config_data.encode_float(idx, profile.atmo_p_light_absorb); idx += 4
 	
-	linear_color = profile.atmo_color_tangent.srgb_to_linear()
-	linear_color = Color.WHITE - linear_color  # Convert to Mie
+	linear_color = profile.atmo_s_color_tangent.srgb_to_linear()
+	linear_color = Color.WHITE - linear_color  # Convert to Mie Absorption
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
 	_config_data.encode_float(idx, linear_color.b); idx += 4
-	_config_data.encode_float(idx, profile.atmo_star_glow); idx += 4
+	_config_data.encode_float(idx, profile.atmo_s_star_glow); idx += 4
 	
 	var light_color := Color.WHITE
 	if _light_source:
@@ -708,12 +713,17 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, linear_color.r); idx += 4
 	_config_data.encode_float(idx, linear_color.g); idx += 4
 	_config_data.encode_float(idx, linear_color.b); idx += 4
-	_config_data.encode_float(idx, profile.atmo_density_falloff); idx += 4
+	_config_data.encode_float(idx, profile.atmo_p_density_falloff); idx += 4
+	
+	_config_data.encode_float(idx, profile.atmo_s_sunset_start); idx += 4
+	_config_data.encode_float(idx, profile.atmo_s_sunset_max); idx += 4
+	_config_data.encode_float(idx, profile.atmo_p_density); idx += 4
+	_config_data.encode_float(idx, profile.atmo_p_overhead_scatter); idx += 4
 	
 	_config_data.encode_float(idx, 0.0); idx += 4
 	_config_data.encode_float(idx, 0.0); idx += 4
-	_config_data.encode_float(idx, 0.0); idx += 4
-	_config_data.encode_float(idx, profile.atmo_refract_bend); idx += 4
+	_config_data.encode_float(idx, profile.atmo_s_haze_start); idx += 4
+	_config_data.encode_float(idx, profile.atmo_s_haze_max); idx += 4
 	
 	_config_data.encode_float(idx, float(atmo_enabled and profile.planet_has_atmosphere)); idx += 4
 	_config_data.encode_float(idx, float(cloud_enabled and profile.planet_has_clouds)); idx += 4
@@ -768,6 +778,26 @@ func _find_light_instance() -> void:
 			_push_error("Failed to locate unique Light Source by relative path")
 			return
 		_light_source = parents[0]
+
+
+func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
+	if not _rd:
+		_push_error("No Render Device")
+		return
+	if not tex_rid.is_valid():
+		_push_error("Invalid RID for image")
+		return
+	var image_data := _rd.texture_get_data(tex_rid, 0)
+	if not image_data:
+		_push_error("No image data for %s" % tex_rid)
+		return
+	var test_image := Image.create_from_data(size.x, size.y, false, format, image_data)
+	if not test_image:
+		_push_error("No image found :(")
+		return
+	var filename := "user://%s.png" % fname
+	test_image.save_png(filename)
+	_print_debug("Saved to '%s'" % filename)
 
 
 func _print_debug(msg: String) -> void:

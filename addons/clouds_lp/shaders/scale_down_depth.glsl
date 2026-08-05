@@ -24,23 +24,25 @@ void main() {
 	ivec2 out_uv = ivec2(gl_GlobalInvocationID.xy);
 	if (out_uv.x >= params.new_size.x || out_uv.y >= params.new_size.y) return;
 
-	int range = int(params.scale_down);
-	float area_range = params.scale_down * params.scale_down;
-	ivec2 fs_uv = out_uv * range;
-	
+	vec2 ratio = scene.data.viewport_size / params.new_size;
+	ivec2 r_min = ivec2(floor(vec2(out_uv) * ratio));
+	ivec2 r_max = ivec2(floor(vec2(out_uv + 1) * ratio));
+
 	vec4 ndc;
 	vec2 fs_screen_uv;
 	float depth;
-	float accum_depth = 0.0;
-	for (int x = 0; x < range; x++) {
-		for(int y = 0; y < range; y++) {
-			fs_screen_uv = get_screen_uv(fs_uv + ivec2(x, y), scene.data.viewport_size);
+	// Need max depth, not accum avg so clouds are overdrawn at foreground edges
+	// Will be cleaned up in atmo combine pass
+	float max_depth = 0.0;
+	// Over sample range so cloud overdraws, but is better occulusion results
+	for (int x = r_min.x - 2; x < r_max.x + 2; x++) {
+		for(int y = r_min.y - 2; y < r_max.y + 2; y++) {
+			fs_screen_uv = get_screen_uv(ivec2(x, y), scene.data.viewport_size);
 			depth = texture(in_depth_sampler, fs_screen_uv).r;
 			ndc = get_ndc(fs_screen_uv, depth);
-			accum_depth += get_depth_linear(scene.data.inv_projection_matrix, ndc);
+			max_depth = max(max_depth, get_depth_linear(scene.data.inv_projection_matrix, ndc));
 		}
 	}
-	
-	accum_depth /= area_range;
-	imageStore(out_depth, out_uv, vec4(accum_depth, 0.0, 0.0, 0.0));
+
+	imageStore(out_depth, out_uv, vec4(max_depth, 0.0, 0.0, 0.0));
 }

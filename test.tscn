@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://n8i5esr2uivp"]
 
-[ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_8uh7m"]
+[ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_0m0f1"]
 [ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="2_6uqi0"]
 [ext_resource type="Resource" uid="uid://wfaboo082doh" path="res://addons/clouds_lp/profiles/earth.tres" id="2_vbegm"]
 [ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="4_ehkex"]
@@ -27,8 +27,8 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("2_6uqi0")
-light_source = NodePath("../Sun/OmniLight3D")
-cloud_quality = ExtResource("1_8uh7m")
+light_source = NodePath("../OmniLight3D")
+cloud_quality = ExtResource("1_0m0f1")
 profile = ExtResource("2_vbegm")
 metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
 
@@ -68,13 +68,15 @@ compositor = SubResource("Compositor_6uqi0")
 [node name="Earth" type="MeshInstance3D" parent="." unique_id=855335820]
 mesh = SubResource("SphereMesh_0m0f1")
 
-[node name="Sun" type="MeshInstance3D" parent="." unique_id=1153659447]
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=932571324]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 1000)
-mesh = SubResource("SphereMesh_5tkv4")
-
-[node name="OmniLight3D" type="OmniLight3D" parent="Sun" unique_id=932571324]
 omni_range = 2000.0
 omni_attenuation = 0.001
+
+[node name="Sun" type="MeshInstance3D" parent="." unique_id=1153659447]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1000, 0, 1000)
+visible = false
+mesh = SubResource("SphereMesh_5tkv4")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=49036016 node_paths=PackedStringArray("auto_align")]
 transform = Transform3D(0.07075993, 0.76276934, -0.64278764, 0.05937467, 0.6400395, 0.76604444, 0.9957246, -0.09237056, -2.809714e-08, 33.775917, 36.58375, -4.590428)

@@ -46,6 +46,12 @@ albedo_color = Color(0.071712695, 0.52902246, 0.12051017, 1)
 material = SubResource("StandardMaterial3D_t8otc")
 size = Vector2(500, 500)
 
+[sub_resource type="BoxMesh" id="BoxMesh_hm56r"]
+size = Vector3(2, 8, 2)
+
+[sub_resource type="BoxMesh" id="BoxMesh_r5xd6"]
+size = Vector3(7.5, 30, 7.5)
+
 [node name="Node3D" type="Node3D" unique_id=2128860581]
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1838696776]
@@ -57,6 +63,18 @@ transform = Transform3D(1, 0, 0, 0, -0.64278764, 0.76604444, 0, -0.76604444, -0.
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1009312384]
 mesh = SubResource("PlaneMesh_2ij8o")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="." unique_id=580486672]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 4, -84.458)
+mesh = SubResource("BoxMesh_hm56r")
+
+[node name="MeshInstance3D3" type="MeshInstance3D" parent="." unique_id=1346786729]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35.963, 15, -58.396)
+mesh = SubResource("BoxMesh_r5xd6")
+
+[node name="MeshInstance3D4" type="MeshInstance3D" parent="." unique_id=1082551686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 9.549892, 15, 14.677944)
+mesh = SubResource("BoxMesh_r5xd6")
 
 [node name="Camera3D" type="Camera3D" parent="." unique_id=1027534904]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)

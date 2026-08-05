@@ -1,0 +1,79 @@
+[gd_scene format=3 uid="uid://brntcgn6djic6"]
+
+[ext_resource type="Resource" uid="uid://dtvvxwto4xb7b" path="res://addons/clouds_lp/quality_profiles/high.tres" id="1_xo60x"]
+[ext_resource type="Texture2D" uid="uid://dsoo1ywxlvmqa" path="res://addons/clouds_lp/noise/01_height.tres" id="2_dpmx5"]
+[ext_resource type="NoiseTexture3D" uid="uid://d2j8xtettj86a" path="res://addons/clouds_lp/noise/01_large.tres" id="3_52nkw"]
+[ext_resource type="Texture2D" uid="uid://djf8566a0rvyw" path="res://addons/clouds_lp/noise/01_mask.tres" id="4_jun5h"]
+[ext_resource type="NoiseTexture3D" uid="uid://jo0idns52fuo" path="res://addons/clouds_lp/noise/01_medium.tres" id="5_eqt8t"]
+[ext_resource type="NoiseTexture3D" uid="uid://cyvflshjc7nkw" path="res://addons/clouds_lp/noise/01_small.tres" id="6_6sqw0"]
+[ext_resource type="CompressedTexture3D" uid="uid://dxblpixysg83u" path="res://addons/clouds_lp/noise/curl_noise_packed.png" id="7_e6got"]
+[ext_resource type="Script" uid="uid://cl330c84bmlil" path="res://addons/clouds_lp/scripts/atmosphere_profile.gd" id="8_0lr1j"]
+[ext_resource type="Script" uid="uid://b6hjkp5wgqqkn" path="res://addons/clouds_lp/scripts/clouds_lp_comp.gd" id="9_i4nr2"]
+[ext_resource type="RDShaderFile" uid="uid://k8gfd23cyxdt" path="res://addons/clouds_lp/shaders/atmo_compute.glsl" id="10_1ckfm"]
+[ext_resource type="RDShaderFile" uid="uid://cb200h5c71etn" path="res://addons/clouds_lp/shaders/atmo_compute_flat.glsl" id="11_toow7"]
+[ext_resource type="RDShaderFile" uid="uid://gkuc4rs1xftu" path="res://addons/clouds_lp/shaders/cloud_compute.glsl" id="12_y1ehk"]
+[ext_resource type="RDShaderFile" uid="uid://cyu4k4xd4ou3e" path="res://addons/clouds_lp/shaders/cloud_compute_flat.glsl" id="13_jdm6p"]
+[ext_resource type="RDShaderFile" uid="uid://casp2y4tv6pc5" path="res://addons/clouds_lp/shaders/scale_down_depth.glsl" id="14_i5u26"]
+[ext_resource type="RDShaderFile" uid="uid://bxdhxwue5ip2x" path="res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl" id="15_p8xj0"]
+
+[sub_resource type="Environment" id="Environment_w6afb"]
+background_mode = 1
+
+[sub_resource type="Resource" id="Resource_5fbl8"]
+script = ExtResource("8_0lr1j")
+planet_radius = 10.0
+atmo_height = 3.0
+atmo_p_density = 0.25
+atmo_p_density_falloff = 5.0
+atmo_p_overhead_scatter = 3.0
+atmo_s_haze_start = 0.5
+atmo_s_haze_max = 2.0
+atmo_s_sunset_start = 0.8
+atmo_s_sunset_max = 0.30000000000000004
+cld_a_detail_rate = 1.5
+cld_a_position_rate = Vector3(8, 8, 8)
+cld_a_mask_rate = Vector2(2, 0)
+cld_nsa_threshold = Vector2(0.4, 0.6)
+cld_nsa_global_scale = 0.75
+cld_ns_height = ExtResource("2_dpmx5")
+cld_ns_mask = ExtResource("4_jun5h")
+cld_ns_large = ExtResource("3_52nkw")
+cld_ns_medium = ExtResource("5_eqt8t")
+cld_ns_small = ExtResource("6_6sqw0")
+cld_ns_wisp = ExtResource("7_e6got")
+metadata/_custom_type_script = "uid://cl330c84bmlil"
+
+[sub_resource type="CompositorEffect" id="CompositorEffect_2lv50"]
+resource_local_to_scene = false
+resource_name = ""
+enabled = true
+effect_callback_type = 4
+needs_motion_vectors = false
+needs_normal_roughness = false
+script = ExtResource("9_i4nr2")
+light_source = NodePath("../DirectionalLight3D")
+cloud_quality = ExtResource("1_xo60x")
+profile = SubResource("Resource_5fbl8")
+metadata/_custom_type_script = "uid://b6hjkp5wgqqkn"
+
+[sub_resource type="Compositor" id="Compositor_8f533"]
+compositor_effects = Array[CompositorEffect]([SubResource("CompositorEffect_2lv50")])
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tmdfm"]
+albedo_color = Color(6.4495207e-06, 0.63222367, 1.92523e-07, 1)
+
+[sub_resource type="SphereMesh" id="SphereMesh_sunu0"]
+material = SubResource("StandardMaterial3D_tmdfm")
+radius = 10.0
+height = 20.0
+
+[node name="Node3D" type="Node3D" unique_id=41659651]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1545076569]
+environment = SubResource("Environment_w6afb")
+compositor = SubResource("Compositor_8f533")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=988496074]
+mesh = SubResource("SphereMesh_sunu0")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=91663938]

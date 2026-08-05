@@ -27,7 +27,8 @@ void main() {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 	if (uv.x >= scene.data.viewport_size.x || uv.y >= scene.data.viewport_size.y) return;
 
-	ivec2 scaled_uv = ivec2(vec2(uv) / params.scale_down);
+	vec2 ratio = params.size / scene.data.viewport_size;
+	ivec2 scaled_uv = ivec2(floor(vec2(uv) * ratio));
 
 	vec4 out_color_depth = imageLoad(in_depth, scaled_uv);
 	vec4 out_color_image = imageLoad(in_image, scaled_uv);

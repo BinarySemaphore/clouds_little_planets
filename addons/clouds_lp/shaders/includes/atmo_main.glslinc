@@ -16,14 +16,11 @@ void main() {
 	vec3 dir = ray_screen(scene.data.inv_view_matrix, scene.data.inv_projection_matrix, screen_uv);
 	float depth_lim = depth_planar_linear / dot(dir, cam_forward);
 	vec4 color = imageLoad(inout_image, uv);
-	// color = vec4(vec3(depth_lim), 1.0);
 
-	#ifdef FLAT_WORLD
 	// Depth past render far plane
-	if (depth_lim >= scene.data.z_far - 0.1) {
+	if (depth_lim >= scene.data.z_far - 0.01) {
 		depth_lim = MAX_DIST;
 	}
-	#endif
 
 	bool is_valid = false;
 	vec2 hit;
@@ -32,16 +29,13 @@ void main() {
 	float max_travel_dist = 0.0;
 	
 	#ifdef FLAT_WORLD
-		hit = vbox_intersect(cam_pos, dir, vec3(0.0, config.data.radius, 0.0), config.data.atmo_alt);
+		hit = vbox_intersect(cam_pos, dir, config.data.pos, config.data.atmo_alt);
 		if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {
 			hit.y = 0.0;
 		}
 		if (hit.y > 0.0 && hit.x <= depth_lim) {
 			start_pos = cam_pos + dir * hit.x;
-			max_travel_dist = min(
-				min(depth_lim - hit.x, hit.y),
-				FLAT_WORLD_DEF_DIAMETER * config.data.atmo_alt + config.data.atmo_alt
-			);
+			max_travel_dist = min(depth_lim - hit.x, hit.y);
 			is_valid = true;
 		}
 	#else
@@ -61,17 +55,30 @@ void main() {
 	#endif
 
 	if (is_valid) {
+		bool star_visible = true;
+		if (depth_lim < MAX_DIST) {
+			star_visible = false;
+		}
+
 		if (config.data.atmo_enable) {
-			vec4 atmo_color = color_through_atmo(start_pos, dir, max_travel_dist, 10, false);
+			vec4 atmo_color = atmo_draw(start_pos, dir, max_travel_dist, 10, star_visible);
 			color.rgb = mix(color.rgb, atmo_color.rgb, atmo_color.a);
 		}
 
 		if (config.data.cloud_enable) {
-			vec4 cloud_color = imageLoad(in_image_clouds, uv);
-			color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a);
-			color.a = mix(color.a, 1.0, cloud_color.a);
+			float cloud_depth = imageLoad(in_depth_clouds, uv).r;
+			if (cloud_depth < depth_lim - 0.01) {
+				/* DEBUG: Render combined depth */
+				// depth_lim = cloud_depth;
+				vec4 cloud_color = imageLoad(in_image_clouds, uv);
+				color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a);
+				color.a = mix(color.a, 1.0, cloud_color.a);
+			}
 		}
 	}
+
+	/* DEBUG: Render combined depth */
+	// color = vec4(vec3(depth_lim / scene.data.z_far, color.g, color.b), 1.0);
 
 	imageStore(inout_image, uv, color);
 }

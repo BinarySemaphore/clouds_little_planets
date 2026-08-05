@@ -5,7 +5,7 @@
 [resource]
 script = ExtResource("1_r5c8g")
 steps = 350
-min_step_size = 0.00601
+step_size = 0.00601
 step_scalar = 1.01
 deband_noise = 0.01
 metadata/_custom_type_script = "uid://b5et5ufitcrtt"

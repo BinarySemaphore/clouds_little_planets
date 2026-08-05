@@ -2,7 +2,7 @@
 
 [ext_resource type="Texture2D" uid="uid://dsoo1ywxlvmqa" path="res://addons/clouds_lp/noise/01_height.tres" id="1_8wopr"]
 [ext_resource type="NoiseTexture3D" uid="uid://d2j8xtettj86a" path="res://addons/clouds_lp/noise/01_large.tres" id="2_ppv5r"]
-[ext_resource type="Texture2D" uid="uid://djf8566a0rvyw" path="res://addons/clouds_lp/noise/01_mask.tres" id="3_hqpvq"]
+[ext_resource type="Texture2D" uid="uid://djf8566a0rvyw" path="res://addons/clouds_lp/noise/01_mask.tres" id="3_8wopr"]
 [ext_resource type="NoiseTexture3D" uid="uid://jo0idns52fuo" path="res://addons/clouds_lp/noise/01_medium.tres" id="4_2ar84"]
 [ext_resource type="NoiseTexture3D" uid="uid://cyvflshjc7nkw" path="res://addons/clouds_lp/noise/01_small.tres" id="5_v81ha"]
 [ext_resource type="CompressedTexture3D" uid="uid://dxblpixysg83u" path="res://addons/clouds_lp/noise/curl_noise_packed.png" id="6_6fdc8"]
@@ -10,22 +10,22 @@
 
 [resource]
 script = ExtResource("7_8t4yt")
-planet_radius = 0.0
 atmo_height = 50.0
-atmo_light_pen = 50.0
-atmo_density_falloff = 6.5
-cld_light_scatter = 1.5
-cld_density_factor = 1.5
-ns_adj_threshold = Vector2(0.5, 0.7)
-ns_adj_wisp_factor = 0.3
-ns_adj_global_scale = 50.0
-ns_adj_scale = Vector4(8, 2, 2, 2)
-ns_adj_mask_offset = Vector2(0.42, 0)
-ns_adj_offset = Vector3(0, 0, 2)
-ns_height = ExtResource("1_8wopr")
-ns_mask = ExtResource("3_hqpvq")
-ns_large = ExtResource("2_ppv5r")
-ns_medium = ExtResource("4_2ar84")
-ns_small = ExtResource("5_v81ha")
-ns_wisp = ExtResource("6_6fdc8")
+atmo_p_overhead_scatter = 3.5
+atmo_s_haze_max = 4.0
+atmo_s_sunset_start = 1.0
+atmo_s_sunset_max = -0.5
+cld_s_light_scatter = 1.5
+cld_s_density_factor = 1.5
+cld_nsa_threshold = Vector2(0.5, 0.7)
+cld_nsa_global_scale = 50.0
+cld_nsa_scale = Vector4(8, 2, 2, 2)
+cld_nsa_mask_offset = Vector2(0.42, 0)
+cld_nsa_offset = Vector3(0, 0, 2)
+cld_ns_height = ExtResource("1_8wopr")
+cld_ns_mask = ExtResource("3_8wopr")
+cld_ns_large = ExtResource("2_ppv5r")
+cld_ns_medium = ExtResource("4_2ar84")
+cld_ns_small = ExtResource("5_v81ha")
+cld_ns_wisp = ExtResource("6_6fdc8")
 metadata/_custom_type_script = "uid://cl330c84bmlil"
