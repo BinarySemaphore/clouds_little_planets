@@ -164,7 +164,7 @@ var _depth_high: RID
 var _depth_low: RID
 
 var _req_write_debug := false
-var _reload_shaders := false
+var _reload_shaders := true
 var _longterm_uniforms_good := false
 var _scaled_down := 1
 var _cloud_anim_time := 0.0
@@ -198,8 +198,7 @@ func _init() -> void:
 	else:
 		scale_down_power = scale_down_power
 	#endregion
-	_setup.call_deferred()
-
+	_setup()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
@@ -213,7 +212,6 @@ func _setup() -> void:
 	access_resolved_depth = true
 	
 	_rd = RenderingServer.get_rendering_device()
-	_load_and_init()
 
 
 func _cleanup(shaders := true, data := true) -> void:
@@ -281,10 +279,13 @@ func _cleanup(shaders := true, data := true) -> void:
 
 func _load_and_init() -> bool:
 	_cleanup(true, false)  # Cleanup shaders only
+	_print_debug("Load and Init shaders...")
+	
 	if light_source and not _light_source:
 		_find_light_instance()
 		if not _light_source:
 			_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
+	
 	_print_debug("Loading Resources (shaders recompiling)...")
 	
 	if not profile:
@@ -332,7 +333,7 @@ func _load_and_init() -> bool:
 	_pipeline_pass_3 = _rd.compute_pipeline_create(_shader_scale_up)
 	_pipeline_pass_4 = _rd.compute_pipeline_create(_shader_atmo)
 	
-	_print_debug("Ready")
+	_print_debug("Ready (Load and Init)")
 	return _pipeline_pass_1.is_valid() and \
 			_pipeline_pass_2.is_valid() and \
 			_pipeline_pass_3.is_valid() and \
@@ -433,18 +434,18 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_depth_low = _rd.texture_create(scaled_depth_format, RDTextureView.new(), [scaled_depth_data])
 	
 	_longterm_uniforms_good = true
-	_print_debug("Ready")
+	_print_debug("Ready (longterm data)")
 
 
 func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -> void:
-	if Engine.is_editor_hint():
-		_mutex.lock()
-		if _reload_shaders:
-			_reload_shaders = false
-			_load_and_init()
-			_mutex.unlock()
-			return
+	_mutex.lock()
+	if _reload_shaders:
+		_reload_shaders = false
+		_load_and_init()
 		_mutex.unlock()
+		return
+	_mutex.unlock()
+	
 	if not (_rd and _pipeline_pass_1.is_valid() and _pipeline_pass_2.is_valid() and _pipeline_pass_3.is_valid() and _pipeline_pass_4.is_valid()):
 		return
 	
@@ -460,7 +461,7 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 	if not _longterm_uniforms_good or _last_size.x != size.x or _last_size.y != size.y:
 		if not _longterm_uniforms_good:
 			_print_debug("Allocate triggered by stale uniforms")
-		if not _last_size.x != size.x or _last_size.y != size.y:
+		elif not _last_size.x != size.x or _last_size.y != size.y:
 			_print_debug("Allocate triggered by resolution change (last %s): %s" % [_last_size, size])
 		_alloc_longterm_data(size)
 	_mutex.unlock()
@@ -756,7 +757,21 @@ func _find_light_instance() -> void:
 	
 	_print_debug("Attempt to resolve light source from compositor relative path: \"%s\"" % light_source)
 	var scene_tree: SceneTree = Engine.get_main_loop()
+	if not scene_tree:
+		_print_debug("Could not get scene tree from Engine.get_main_loop()")
+		return
 	_light_source = null
+	
+	var root_node: Node = null
+	if Engine.is_editor_hint():
+		root_node = scene_tree.edited_scene_root
+	elif scene_tree.root.get_child_count() > 0:
+		root_node = scene_tree.root.get_child(0)
+	if not root_node:
+		_print_debug("Could not get scene root from tree %s" % scene_tree)
+	if not root_node.is_node_ready():
+		_print_debug("Waiting for root node to be ready %s" % root_node)
+		await root_node.ready
 	
 	# Resolve unknown rel NodePath to absolute
 	# Compositor NodePath is unaware of self in scene tree, but can walk back
@@ -771,11 +786,7 @@ func _find_light_instance() -> void:
 	if not cur_name: return
 	
 	# Search for parent
-	var parents: Array[Node]
-	if Engine.is_editor_hint():
-		parents = scene_tree.edited_scene_root.find_children(cur_name)
-	else:
-		parents = scene_tree.root.find_children(cur_name, "", true, false)
+	var parents: Array[Node] = root_node.find_children(cur_name)
 	if not parents:
 		_push_error("Failed to locate Light Source parent by relative path")
 		return
