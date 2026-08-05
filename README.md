@@ -1,8 +1,9 @@
-# Clouds for Little Planets (Early Release)
-Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat world WIP)
+# Clouds for Little Planets (v1.0)
+Godot 4.6 Cloud and Atmospheric compositor for little planets and flat worlds
 
 * [Features](#features)
   * [Screenshots](#screenshots)
+* [Known Issues](#known-issues)
 * [Install](#install)
   * [Godot AssetLib](#godot-assetlib)
   * [Direct (from GitHub)](#direct-from-github)
@@ -40,8 +41,15 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets (optional flat wor
 ### Screenshots
 | <img src="github/screenshots/20260724_180734.png"> | <img src="github/screenshots/20260724_180925.png"> | <img src="github/screenshots/20260724_180901.png"> |
 | --- | --- | --- |
-| <img src="github/screenshots/20260724_180749.png"> | <img src="github/screenshots/20260724_180806.png"> | <img src="github/screenshots/20260724_180819.png"> |
-| <img src="github/screenshots/20260724_180953.png"> | <img src="github/screenshots/20260724_181045.png"> | |
+| <img src="github/screenshots/20260724_180749.png"> | <img src="github/screenshots/20260724_180806.png"> | <img src="github/screenshots/20260724_180953.png"> |
+| <img src="github/screenshots/20260804_203810.png"> | <img src="github/screenshots/20260804_205150.png"> | |
+
+## Known Issues
+- Embedded objects (like buildings in clouds):
+  - Edges are down scaled
+  - Cloud banding in some situations (near walls for dense clouds)
+- Untested: Complex foreground transparency
+- Untested: MSAA
 
 ## Install
 ### Godot AssetLib

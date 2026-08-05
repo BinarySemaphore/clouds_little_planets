@@ -76,7 +76,7 @@ float cloud_density_at_pos(vec3 pos) {
 	return clamp(density, 0.0, 1.0);
 }
 
-vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
+vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, inout float depth) {
 	vec4 color = vec4(0.0);
 	vec3 pos = start;
 	vec3 l_dir = normalize(config.data.light_pos - start);
@@ -96,11 +96,14 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 	float deband = config.data.cl_deband;
 	float filter_threshold = 0.0005;
 	float light_pen = config.data.cl_light_pen * config.data.cl_global_scale;
-	float step_size = min(
-		max_travel_dist / float(config.data.cl_steps),
-		config.data.cl_max_step_size * config.data.cl_global_scale
-	);
+	// Switched to fixed step_size as it works better with embedded objects
+	float step_size = config.data.cl_max_step_size * config.data.cl_global_scale;
+	// float step_size = min(
+	// 	max_travel_dist / float(config.data.cl_steps),
+	// 	config.data.cl_max_step_size * config.data.cl_global_scale
+	// );
 	float travel_dist = step_size;
+	bool depth_updated = false;
 
 	vec4 color_sample;
 	vec3 l_pos, color_atmo_scatter;
@@ -113,7 +116,10 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, out float depth) {
 
 	for (int i = 0; i < config.data.cl_steps; i++) {
 		if (travel_dist > max_travel_dist) break;
-		if (color.a > 0.001) depth = min(depth, travel_dist);
+		if (!depth_updated && color.a > 0.01) {
+			depth = min(depth, travel_dist);
+			depth_updated = true;
+		}
 		if (color.a >= 1.0) break;
 
 		pos = start + dir * travel_dist;
@@ -195,32 +201,8 @@ void main() {
 	if (uv.x >= params.size.x || uv.y >= params.size.y) return;
 	seed = rand_seed_2d(vec2(uv));
 
-
-	// TODO: Replace with full-res uv depth_sampler.
-	// Scrap down-scaled depth, otherwise clouds behind opaques post-atmo will be chunky (giving outline appearance)
-	// Edit:
-	//     That won't work. Cloud pass is down-scaled, converting i_uv to full-res screen uv to sample
-	// depth cannot add any depth fidelity. The only way would be to 2D for-loop over the "sub-pixels"
-	// in the depth sample, which means clouds are calculated at native res. Even worse, the output is
-	// still low-res, so all of that get's thrown away in the output constraint anyway.
-	// It's simply not possible at the cloud pass.
-	// The solution: on the depth scale down pass, instead of averaging all depth pixels into low-res
-	// depth pixel, keep only the largest value for the low-res depth output.
-	// This ensures clouds that __need__ to be drawn behind foreground opaque objects are not
-	// prematurely skipped due to low-res depth averaging. At the edges of a foreground object, the
-	// low-res depth will bias towards distance, overdrawing clouds at edges.
-	// We keep the updated depth output from clouds, both depth and color get upscaled.
-	// On the combine pass within atmo_main, which is native res, use the depth comparison to draw
-	// foreground objects over the larger cloud pixels.
-
 	// highp float depth_planar = imageLoad(inout_depth, uv).r;
 	float depth_planar = imageLoad(inout_depth, uv).r;
-	// int range = int(params.scale_down);
-	// ivec2 fs_uv = uv * range;
-	// vec2 fs_screen_uv = get_screen_uv(fs_uv, scene.data.viewport_size);
-	// float depth = texture(in_depth_sampler, fs_screen_uv).r;
-	// vec4 ndc = get_ndc(fs_screen_uv, depth);
-	// float depth_planar = get_depth_linear(scene.data.inv_projection_matrix, ndc);
 	// To get proper screen_uv it's easier to scale up and use viewport_size.
 	// Since params.size is ceil-ed from (viewport_size / params.scale_down),
 	// X or Y may have partial pixels (overscanned); doesn't matter for drawing,
@@ -231,12 +213,12 @@ void main() {
 	vec3 dir = ray_screen(scene.data.inv_view_matrix, scene.data.inv_projection_matrix, screen_uv);
 	// highp float depth_lim = depth_planar / dot(dir, cam_forward);
 	float depth_lim = depth_planar / dot(dir, cam_forward);
+	float depth_result = depth_lim;
 	vec4 color = vec4(0.0);
 
-	float orig_depth_lim = depth_lim;
 	#ifdef FLAT_WORLD
 	// Depth past render far plane
-	if (depth_lim >= scene.data.z_far - 0.1) {
+	if (depth_lim >= scene.data.z_far - 0.01) {
 		depth_lim = MAX_DIST;
 	}
 	#endif
@@ -246,6 +228,7 @@ void main() {
 	vec3 start_pos = vec3(0.0);
 	float atmo_travel_dist = 0.0;
 	float max_travel_dist = 0.0;
+	float depth_offset = 0.0;
 
 	#ifdef FLAT_WORLD
 		hit = vbox_intersect(cam_pos, dir, config.data.pos, config.data.atmo_alt);
@@ -254,6 +237,7 @@ void main() {
 		}
 		if (hit.y > 0.0 && hit.x <= depth_lim) {
 			start_pos = cam_pos + dir * hit.x;
+			depth_offset = hit.x;
 			max_travel_dist = min(depth_lim - hit.x, hit.y);
 			is_valid = true;
 		}
@@ -267,6 +251,7 @@ void main() {
 			if (hit.y > 0.0 && hit.x <= depth_lim) {
 				atmo_travel_dist = hit.y;
 				start_pos = cam_pos + dir * hit.x;
+				depth_offset = hit.x;
 				max_travel_dist = min(depth_lim - hit.x, hit.y);
 				is_valid = true;
 			}
@@ -295,7 +280,9 @@ void main() {
 		}
 
 		if (config.data.cloud_enable) {
-			color = cloud_march(start_pos, dir, max_travel_dist, orig_depth_lim);
+			float new_depth = MAX_DIST;
+			color = cloud_march(start_pos, dir, max_travel_dist, new_depth);
+			depth_result = min(depth_result, new_depth + depth_offset);
 		}
 
 		/* DEBUG: Draw hits with travel dist ratio */
@@ -303,6 +290,6 @@ void main() {
 		// color = vec4(vec3(0.0, travel_ratio, travel_ratio), 0.9);
 	}
 
-	imageStore(inout_depth, uv, vec4(orig_depth_lim, 0.0, 0.0, 0.0));
+	imageStore(inout_depth, uv, vec4(depth_result, 0.0, 0.0, 0.0));
 	imageStore(out_image, uv, color);
 }

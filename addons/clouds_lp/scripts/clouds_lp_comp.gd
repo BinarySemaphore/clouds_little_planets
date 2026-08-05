@@ -48,7 +48,7 @@ extends CompositorEffect
 			_mutex.lock()
 			_reload_shaders = true
 			_mutex.unlock()
-## Write PNGs (see Output) for debugging.
+### Write PNGs (see Output) for debugging.
 #@export var write_debug := false:
 	#set(value):
 		#write_debug = false
@@ -605,29 +605,11 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 			if _req_write_debug:
 				_print_debug("Try save...")
 				_req_write_debug = false
-				_debug_save_rd_texture.call_deferred(_clouds_high, size, "color")
-				_debug_save_rd_texture.call_deferred(_depth_high, size, "depth", Image.FORMAT_RH)
+				_debug_save_rd_texture.call_deferred(_clouds_low, _scaled_size, "cloud_low_color", Image.FORMAT_RGBA16)
+				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "cloud_low_depth", Image.FORMAT_RH)
+				_debug_save_rd_texture.call_deferred(_clouds_high, size, "cloud_high_color")
+				_debug_save_rd_texture.call_deferred(_depth_high, size, "cloud_high_depth", Image.FORMAT_RH)
 			_mutex.unlock()
-
-
-func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
-	if not _rd:
-		_push_error("No Render Device")
-		return
-	if not tex_rid.is_valid():
-		_push_error("Invalid RID for image")
-		return
-	var image_data := _rd.texture_get_data(tex_rid, 0)
-	if not image_data:
-		_push_error("No image data for %s" % tex_rid)
-		return
-	var test_image := Image.create_from_data(size.x, size.y, false, format, image_data)
-	if not test_image:
-		_push_error("No image found :(")
-		return
-	var filename := "user://%s.png" % fname
-	test_image.save_png(filename)
-	_print_debug("Saved to '%s'" % filename)
 
 
 func _update_config_data() -> void:
@@ -686,7 +668,7 @@ func _update_config_data() -> void:
 	_config_data.encode_s32(idx, cloud_quality.steps); idx += 4
 	
 	_config_data.encode_float(idx, cloud_quality.step_scalar); idx += 4
-	_config_data.encode_float(idx, cloud_quality.max_step_size); idx += 4
+	_config_data.encode_float(idx, cloud_quality.step_size); idx += 4
 	_config_data.encode_float(idx, cloud_quality.deband_noise); idx += 4
 	_config_data.encode_float(idx, cloud_quality.deband_noise_scalar); idx += 4
 	
@@ -796,6 +778,26 @@ func _find_light_instance() -> void:
 			_push_error("Failed to locate unique Light Source by relative path")
 			return
 		_light_source = parents[0]
+
+
+func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
+	if not _rd:
+		_push_error("No Render Device")
+		return
+	if not tex_rid.is_valid():
+		_push_error("Invalid RID for image")
+		return
+	var image_data := _rd.texture_get_data(tex_rid, 0)
+	if not image_data:
+		_push_error("No image data for %s" % tex_rid)
+		return
+	var test_image := Image.create_from_data(size.x, size.y, false, format, image_data)
+	if not test_image:
+		_push_error("No image found :(")
+		return
+	var filename := "user://%s.png" % fname
+	test_image.save_png(filename)
+	_print_debug("Saved to '%s'" % filename)
 
 
 func _print_debug(msg: String) -> void:

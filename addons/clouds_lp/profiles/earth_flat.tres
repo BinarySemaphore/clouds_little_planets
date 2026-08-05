@@ -17,7 +17,6 @@ atmo_s_sunset_start = 1.0
 atmo_s_sunset_max = -0.5
 cld_s_light_scatter = 1.5
 cld_s_density_factor = 1.5
-cld_a_enabled = false
 cld_nsa_threshold = Vector2(0.5, 0.7)
 cld_nsa_global_scale = 50.0
 cld_nsa_scale = Vector4(8, 2, 2, 2)
