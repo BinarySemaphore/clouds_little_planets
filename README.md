@@ -57,9 +57,6 @@ _Release Pending..._
 1) Find `Import...` on the top right of `AssetLib` window
 1) Select the downloaded `clouds_lp.zip` file and click `Open`
 1) Click `Install`
-1) From the menu-bar click `Project` > `Project Settings`
-1) Select `Plugins` tab in the "Project Settings" window
-1) Enable "__CloudsLP__"
 
 ## Guide
 Clouds for Little Planets (__CloudsLP__) is a compositor.
