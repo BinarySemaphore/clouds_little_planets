@@ -53,7 +53,7 @@ _Release Pending..._
 ### Direct (from GitHub)
 1) Go to [Releases](https://github.com/BinarySemaphore/clouds_little_planets/releases)
 1) Download the latest `clouds_lp.zip` file
-1) Click on `AssetLib` at the top
+1) In Godot, Click on `AssetLib` at the top
 1) Find `Import...` on the top right of `AssetLib` window
 1) Select the downloaded `clouds_lp.zip` file and click `Open`
 1) Click `Install`
