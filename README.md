@@ -39,10 +39,10 @@ Godot 4.6 Cloud and Atmospheric compositor for little planets and flat worlds
 - Wind (WIP)
 
 ### Screenshots
-| <img src="github/screenshots/20260724_180734.png"> | <img src="github/screenshots/20260724_180925.png"> | <img src="github/screenshots/20260724_180901.png"> |
-| --- | --- | --- |
-| <img src="github/screenshots/20260724_180749.png"> | <img src="github/screenshots/20260724_180806.png"> | <img src="github/screenshots/20260724_180953.png"> |
-| <img src="github/screenshots/20260804_203810.png"> | <img src="github/screenshots/20260804_205150.png"> | |
+| <img src="github/screenshots/20260724_180734.png" width="200"> | <img src="github/screenshots/20260724_180925.png" width="200"> | <img src="github/screenshots/20260724_180901.png" width="200"> |
+| :---: | :---: | :---: |
+| <img src="github/screenshots/20260724_180749.png" width="200"> | <img src="github/screenshots/20260724_180806.png" width="200"> | <img src="github/screenshots/20260724_180953.png" width="200"> |
+| <img src="github/screenshots/20260804_203810.png" width="200"> | <img src="github/screenshots/20260804_205150.png" width="200"> | |
 
 ## Known Issues
 - Embedded objects (like buildings in clouds):
