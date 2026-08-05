@@ -175,6 +175,21 @@ var _scaled_size: Vector2i
 var _config_data: PackedByteArray
 
 
+## Returns the first [CloudsLP] instance in [param node]'s compositor effects.[br]
+## Returns [constant null] if no instance found.[br]
+## Asserts [param node] and [param node] has [Compositor] property.
+static func get_from_node(node: Node) -> CloudsLP:
+	assert(node, "Node cannot be null")
+	var comp: Compositor = node.get("compositor")
+	assert(comp, "Node %s does not have a Compositor. Node should be like WorldEnvironment or Camera3D" % node)
+	
+	for effect in comp.compositor_effects:
+		if effect is CloudsLP:
+			return effect
+	
+	return null
+
+
 # Called when this resource is constructed.
 func _init() -> void:
 	#region initial kicks to tigger set() calls

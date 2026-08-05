@@ -1,17 +1,13 @@
-Cloud and Atmospheric compositor for little/big planets and flat worlds.
+Atmospheric and volumetric cloud compositor for spherical and flat worlds.
 
-This is a compositor effect and set of shaders with native and organized editor configurations.
-Check included README or GitHub for Guide.
+Native Godot editor integration with reusable Resources and organized inspector categories.
+Check included addon README or GitHub README for Guide.
 
 ## Features
-- Inside and out (from space) atmospheric and cloud rendering
-- Art driven atmospherics
-  - Physics inspired, but art simplified (adjust haze and sunsets based on distance and vector-angles)
-- Volumetric cloud generation
-  - Cloud atmosphere relighting
-- Profiles (for quick swapping in editor or during runtime)
-  - Planet and Quality profile resources
-- Radial (large scale / toy planet) or Flat world rendering
-- Multiple cloud adjustable layers
-- Rescaling
-- Time progression (animation)
+- Atmospheric rendering from ground to space
+- Art-specifc atmosphere controls
+- Volumetric cloud generation with atmospheric lighting
+- Multiple configurable cloud layers
+- Scalable for large planets, toy planets, and flat worlds
+- Planet and quality Resource profiles
+- Time progression (cloud animation)
