@@ -1,5 +1,5 @@
 # Clouds for Little Planets (v1.0)
-Godot 4.6 Cloud and Atmospheric compositor for little planets and flat worlds
+Cloud and Atmospheric compositor for little/big planets and flat worlds for Godot 4.6
 
 * [Features](#features)
   * [Screenshots](#screenshots)
