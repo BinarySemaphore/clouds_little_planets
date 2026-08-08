@@ -1,7 +1,10 @@
+Clouds for Little Planets
+
+---
 Atmospheric and volumetric cloud compositor for spherical and flat worlds.
 
 Native Godot editor integration with reusable Resources and organized inspector categories.
-Check included addon README or GitHub README for Guide.
+Check included addon README or GitHub README for video and written Guide.
 
 ## Features
 - Atmospheric rendering from ground to space
@@ -11,3 +14,45 @@ Check included addon README or GitHub README for Guide.
 - Scalable for large planets, toy planets, and flat worlds
 - Planet and quality Resource profiles
 - Time progression (cloud animation)
+
+---
+Shaders
+
+---
+MIT
+
+---
+GitHub
+
+---
+https://github.com/BinarySemaphore/clouds_little_planets
+
+---
+<blank>
+
+---
+4.6
+
+---
+<version>
+
+---
+<version hash>
+
+---
+https://raw.githubusercontent.com/BinarySemaphore/clouds_little_planets/main/github/assetlib_icon.png
+
+---
+Video
+https://youtu.be/kXCV3EfYfq0
+https://img.youtube.com/vi/kXCV3EfYfq0/mqdefault.jpg
+
+---
+Image
+https://raw.githubusercontent.com/BinarySemaphore/clouds_little_planets/main/github/screenshots/20260724_180925.png
+https://raw.githubusercontent.com/BinarySemaphore/clouds_little_planets/main/github/assetlib_p1_icon.png
+
+---
+Image
+https://raw.githubusercontent.com/BinarySemaphore/clouds_little_planets/main/github/screenshots/20260724_180953.png
+https://raw.githubusercontent.com/BinarySemaphore/clouds_little_planets/main/github/assetlib_p2_icon.png
