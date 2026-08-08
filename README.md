@@ -1,5 +1,5 @@
 # Clouds for Little Planets (v1.0)
-Atmospheric and volumetric cloud compositor for spherical and flat worlds for Godot 4.6.
+Atmospheric and volumetric cloud compositor for spherical and flat worlds for Godot 4.6 or later.
 
 Native Godot editor integration with reusable Resources and organized inspector categories.
 
@@ -63,7 +63,9 @@ Clouds for Little Planets (__CloudsLP__) is a compositor.
 Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
 
 ### Video Guide
-_In Progress..._
+[https://youtu.be/bK4V6IIE3kU](https://youtu.be/bK4V6IIE3kU)
+
+<video src="https://youtu.be/bK4V6IIE3kU" width="300" controls></video>
 
 ### Quick Start (Example)
 1) Ensure Godot is 4.6 (native or C#) and in a `Forward+` project
