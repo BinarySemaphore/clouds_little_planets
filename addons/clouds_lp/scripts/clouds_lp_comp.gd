@@ -167,6 +167,7 @@ var _req_write_debug := false
 var _reload_shaders := true
 var _longterm_uniforms_good := false
 var _scaled_down := 1
+var _ovrd_anim_time := 0.0
 var _cloud_anim_time := 0.0
 var _mutex := Mutex.new()
 var _light_source: Light3D
@@ -204,6 +205,15 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		if is_instance_valid(self):
 			_cleanup()
+
+
+## Overrides all animation times with [param time].[br]
+## Ignored if set to [code]0.0[/code] or any disabled animations.[br]
+## [br][color=yellow]Warning:[/color] Using this prevents animations from
+## honoring pause settings like [member CloudsLP.profile] > [code]Clouds > Animation > Pausable[/code]
+## ([member AtmosphereProfile.cld_a_pausable]); pausing will be time will be up to you.
+func override_anim_time(time: float) -> void:
+	_ovrd_anim_time = time
 
 
 func _setup() -> void:
@@ -633,7 +643,9 @@ func _update_config_data() -> void:
 	var linear_color: Color
 	
 	if profile.cld_a_enabled:
-		if not profile.cld_a_pausable or not (Engine.get_main_loop() as SceneTree).paused:
+		if _ovrd_anim_time != 0.0:
+			_cloud_anim_time = _ovrd_anim_time
+		elif not profile.cld_a_pausable or not (Engine.get_main_loop() as SceneTree).paused:
 			_cloud_anim_time += -1.0 if profile.cld_a_reverse else 1.0
 	
 	var light_position: Vector3
