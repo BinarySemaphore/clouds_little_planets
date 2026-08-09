@@ -49,7 +49,14 @@ Native Godot editor integration with reusable Resources and organized inspector 
 
 ## Install
 ### Godot AssetLib
-_Release Pending..._
+1) In Godot, click on `AssetLib` at the top
+1) Search for "_clouds for little planets_"
+1) Locate the "_Clouds for Little Planets_" shader entry, then click its title
+   - (Optional - for manual download) [Direct Link](https://godotengine.org/asset-library/asset/5396)
+1) In the pop-up window, select `Download`
+1) Wait for download to complete and another pop-up window
+1) Ensure "_Ignore asset root_" is __enabled__
+1) Click `Install`
 ### Direct (from GitHub)
 1) Go to [Releases](https://github.com/BinarySemaphore/clouds_little_planets/releases)
 1) Download the latest `clouds_lp.zip` file
