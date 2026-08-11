@@ -7,11 +7,11 @@ extends CompositorEffect
 ## disabled.
 @export var debug_output := false
 ## [code]In-Editor[/code] Cloud rendering resolution down scaling ratio.[br]
-## Does not impact atmoshpere.[br]
+## Does not impact atmosphere.[br]
 ## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
 ## [br][color=white]Note:[/color] Recommend lower resolutions for editor to
-## reduce resouce load while working, compositor can be toggled on/off with
+## reduce resource load while working, compositor can be toggled on/off with
 ## [member CloudsLP.enabled] (near bottom).[br] 
 ## [br][color=white]Note:[/color] For in-game resolution, see
 ## [member CloudsLP.scale_down_power].
@@ -25,7 +25,7 @@ extends CompositorEffect
 			_longterm_uniforms_good = false
 			_mutex.unlock()
 ## [code]In-Game[/code] Cloud rendering resolution down scaling ratio.[br]
-## Does not impact atmoshpere.[br]
+## Does not impact atmosphere.[br]
 ## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
 ## [br][color=white]Note:[/color] For more performance control, see
@@ -98,7 +98,7 @@ extends CompositorEffect
 ## is done during initialization or anytime the [code]Light3D[/code]'s path
 ## changes.[br]
 ## [br][color=white]Note:[/color] Assigning a different light source will
-## reload shadders.
+## reload shaders.
 @export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath:
 	set(value):
 		light_source = value
@@ -111,7 +111,7 @@ extends CompositorEffect
 ## [br][color=white]Note:[/color] See [member CloudsLP.scale_down_power] for
 ## more performance control.[br]
 ## [br][color=white]Note:[/color] Assigning a different quality profile will
-## reload shadders.
+## reload shaders.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
 		cloud_quality = value
@@ -120,7 +120,7 @@ extends CompositorEffect
 		_mutex.unlock()
 ## Atmosphere and Cloud Profile.[br]
 ## [br][color=white]Note:[/color] Assigning a different profile will reload
-## shadders.
+## shaders.
 @export var profile: AtmosphereProfile:
 	set(value):
 		profile = value
@@ -135,7 +135,7 @@ extends CompositorEffect
 ## res://addons/clouds_lp/shaders/cloud_compute_flat.glsl
 @export var shdr_clouds_flat_file: RDShaderFile = preload("uid://cyu4k4xd4ou3e")
 ## res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl[br]
-## [color=white]Altenatives:[/color][br]
+## [color=white]Alternatives:[/color][br]
 ## res://addons/clouds_lp/shaders/sclae_up_raw.glsl
 @export var shdr_upscaler_file: RDShaderFile = preload("uid://bxdhxwue5ip2x")
 ## res://addons/clouds_lp/shaders/atmo_compute.glsl
@@ -193,7 +193,7 @@ static func get_from_node(node: Node) -> CloudsLP:
 
 # Called when this resource is constructed.
 func _init() -> void:
-	#region initial kicks to tigger set() calls
+	#region initial kicks to trigger set() calls
 	if Engine.is_editor_hint():
 		scale_down_power_editor = scale_down_power_editor
 	else:

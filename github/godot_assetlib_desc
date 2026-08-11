@@ -8,7 +8,7 @@ Check included addon README or GitHub README for video and written Guide.
 
 ## Features
 - Atmospheric rendering from ground to space
-- Art-specifc atmosphere controls
+- Art-specific atmosphere controls
 - Volumetric cloud generation with atmospheric lighting
 - Multiple configurable cloud layers
 - Scalable for large planets, toy planets, and flat worlds

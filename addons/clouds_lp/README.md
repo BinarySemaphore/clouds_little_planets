@@ -17,7 +17,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
 
 ## Features
 - Atmospheric rendering from ground to space
-- Art-specifc atmosphere controls
+- Art-specific atmosphere controls
 - Volumetric cloud generation with atmospheric lighting
 - Multiple configurable cloud layers
 - Scalable for large planets, toy planets, and flat worlds
@@ -33,7 +33,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
 
 ## Guide
 Clouds for Little Planets (__CloudsLP__) is a compositor.
-Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
+Compositors can be applied as effects onto any `WorldEnvironment` or `Camera3D` node.
 
 ### Video Guide
 [![Watch the video](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
@@ -46,9 +46,9 @@ Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D`
 1) Zoom out to ~20m to view 10m radius little planet
 1) Play with configuration
    1) Click on `WorldEnvironment`
-   1) In the inspector, expand the `Componsitor` and `Compositor Effects`
+   1) In the inspector, expand the `Compositor` and `Compositor Effects`
    1) Click on `CloudsLP` to show settings
-      - Majority of settings are under the `Profile`, for this scene it's named "_AtmoshpereProfile_"
+      - Majority of settings are under the `Profile`, for this scene it's named "_AtmosphereProfile_"
       - Three main sections: `Planet`, `Atmosphere`, and `Clouds`
    - For more details see [Configuring](#configuring)
    - The following resources are external (shared between scenes), to modify them uniquely within this scene only, see below:
@@ -93,7 +93,7 @@ __Cloud Quality__ and planet __Profile__ are resources which can be saved or loa
      > Godot's `CompositorEffect` is not directly in the scene tree and cannot natively resolve a _NodePath_. __CloudsLP__ resolves the _NodePath_ during initialization by locating the first named ancestor which can complete the remaining path. The resulting `Light3D` is cached during runtime. Restrictions from this limitation are documented directly in the parameter's hint/comment. Warnings and errors are given to help fix path any problems.
 
 - Rescaling Everything While Maintaining the Same Visuals:
-  - Resizing __Profile > Atmosphere > Height__ impacts mutliple visuals
+  - Resizing __Profile > Atmosphere > Height__ impacts multiple visuals
   - Atmosphere density and style should automatically adjust
   - Clouds do not automatically scale with height
     - __Profile > Clouds > Noise Adjust > Global Scale__ should be changed by the same ratio as height (if height was 2 and is now 6, then global scale should be multiplied by 3)
@@ -120,9 +120,9 @@ var sky_fx: CloudsLP
 
 
 func _ready() -> void:
-  sky_fx = CloudsLP.get_from_node(world_env)
-  sky_fx.position = global_position
-  sky_fx.profile.atmo_s_color_direct = Color.PLUM
+   sky_fx = CloudsLP.get_from_node(world_env)
+   sky_fx.position = global_position
+   sky_fx.profile.atmo_s_color_direct = Color.PLUM
 ```
 
 ### Custom Modification
@@ -134,7 +134,7 @@ Most of the actual code exists in `atmo.glslinc`, `atmo_main.glslinc`, and `clou
 
 Scene info is stored from Godot's render scene data UBO, provided in all shaders as __scene.data__ struct defined in `includes/struct_ubo_godot.glslinc`.
 
-__CloudsLP__ specific info is writen by `clouds_lp_comp.gd` *_update_config_data()* method for the `PackedByteArray` *_config_data* (size enforced by *_alloc_longterm_data()* method).
+__CloudsLP__ specific info is written by `clouds_lp_comp.gd` *_update_config_data()* method for the `PackedByteArray` *_config_data* (size enforced by *_alloc_longterm_data()* method).
 In shaders as __config.data__ struct defined in `includes/struct_ubo_config.glslinc`.
 
 ## Notable Mentions:
