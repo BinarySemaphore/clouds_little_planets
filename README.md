@@ -5,6 +5,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
 
 * [Features](#features)
   * [Screenshots](#screenshots)
+  * [Preview](#preview)
 * [Known Issues](#known-issues)
 * [Install](#install)
   * [Godot AssetLib](#godot-assetlib)
@@ -40,6 +41,9 @@ Native Godot editor integration with reusable Resources and organized inspector 
 | <img src="github/screenshots/20260724_180749.png" width="200"> | <img src="github/screenshots/20260724_180806.png" width="200"> | <img src="github/screenshots/20260724_180953.png" width="200"> |
 | <img src="github/screenshots/20260804_203810.png" width="200"> | <img src="github/screenshots/20260804_205150.png" width="200"> | |
 
+### Preview
+[![Video Preview](https://img.youtube.com/vi/kXCV3EfYfq0/mqdefault.jpg)](https://youtu.be/kXCV3EfYfq0)
+
 ## Known Issues
 - Embedded objects (like buildings in clouds):
   - Edges are down scaled
@@ -70,9 +74,7 @@ Clouds for Little Planets (__CloudsLP__) is a compositor.
 Compositors can be applied as effects onto any `WorldEnvironment` or `Camera3D` node.
 
 ### Video Guide
-[![Watch the video](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
-
-[https://youtu.be/bK4V6IIE3kU](https://youtu.be/bK4V6IIE3kU)
+[![Video Guide](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
 
 ### Quick Start (Example)
 1) Ensure Godot is 4.6 (native or C#) and in a `Forward+` project

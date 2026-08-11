@@ -36,9 +36,7 @@ Clouds for Little Planets (__CloudsLP__) is a compositor.
 Compositors can be applied as effects onto any `WorldEnvironment` or `Camera3D` node.
 
 ### Video Guide
-[![Watch the video](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
-
-[https://youtu.be/bK4V6IIE3kU](https://youtu.be/bK4V6IIE3kU)
+[![Video Guide](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
 
 ### Quick Start (Example)
 1) Ensure Godot is 4.6 (native or C#) and in a `Forward+` project
