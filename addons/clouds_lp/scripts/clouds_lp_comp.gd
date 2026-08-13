@@ -778,7 +778,7 @@ func _find_light_instance() -> void:
 	if Engine.is_editor_hint():
 		root_node = scene_tree.edited_scene_root
 	elif scene_tree.root.get_child_count() > 0:
-		root_node = scene_tree.root.get_child(0)
+		root_node = scene_tree.root
 	if not root_node:
 		_print_debug("Could not get scene root from tree %s" % scene_tree)
 	if not root_node.is_node_ready():
@@ -795,12 +795,14 @@ func _find_light_instance() -> void:
 		if cur_name not in skip:
 			cur_name_index = i
 			break
-	if not cur_name: return
+	if not cur_name:
+		_push_error("Invalid NodePath for Light Source: \"%s\"" % light_source)
+		return
 	
 	# Search for parent
-	var parents: Array[Node] = root_node.find_children(cur_name)
+	var parents: Array[Node] = root_node.find_children(cur_name, "", true, false)
 	if not parents:
-		_push_error("Failed to locate Light Source parent by relative path")
+		_push_error("Failed to locate Light Source \"%s\" by relative path" % cur_name)
 		return
 	if len(parents) > 1:
 		_push_warn("Potential for incorrect Light Source from relative path, suggest giving the Light's parent \"%s\" a unique name" % cur_name)
@@ -810,12 +812,16 @@ func _find_light_instance() -> void:
 		for parent in parents:
 			_light_source = parent.get_node_or_null(light_source.slice(cur_name_index + 1))
 			if _light_source:
-				break  # Correct source found
-	else:
-		if len(parents) > 1:
-			_push_error("Failed to locate unique Light Source by relative path")
-			return
+				if _light_source is Light3D:
+					break  # Correct source found
+				else:
+					_light_source = null
+	# Can't search ancestors, last chance: parent might be the Light3D if there's only one
+	elif len(parents) == 1 and parents[0] is Light3D:
 		_light_source = parents[0]
+	
+	if not _light_source:
+		_push_error("Failed to locate unique Light Source \"%s\" by relative path, either the Light3D needs a unique name (or its parent) or enter the node path manually" % cur_name)
 
 
 func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
