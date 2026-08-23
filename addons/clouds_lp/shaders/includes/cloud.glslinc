@@ -33,6 +33,7 @@ float cloud_density_at_pos(vec3 pos) {
 	if (alt_mask.r <= 0.0) return 0.0;
 
 	pos -= config.data.pos;
+	pos *= config.data.basis;
 
 	float g_scale_sq = alt_mask.g * alt_mask.g;
 	float modified_global_scale = config.data.cl_global_scale * g_scale_sq;

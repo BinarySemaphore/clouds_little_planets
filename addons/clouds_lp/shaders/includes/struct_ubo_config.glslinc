@@ -5,6 +5,8 @@ struct CGUBO {
 	vec3 pos;
 	float radius;
 
+	mat3 basis;
+
 	float atmo_alt;
 	
 	// Cloud

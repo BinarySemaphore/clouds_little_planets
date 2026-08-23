@@ -83,21 +83,46 @@ extends CompositorEffect
 		_mutex.lock()
 		_reload_shaders = true
 		_mutex.unlock()
-## Optional distance limit, useful for simple cloud sampling.[br]
+## [color=white]Optional[/color] distance limit, useful for simple cloud
+## sampling or hard distance limiting.[br]
 ## [br][color=white]Note:[/color] ignored for values <= [code]0.0[/code].
 @export var max_distance := 0.0
 ## Planet position in world-space.[br]
 ## For [member CloudsLP.flat_world] the [code]Y[/code] component is sea-level.
 @export var position := Vector3.ZERO
-## [code]Light3D[/code] to drive lighting color and positioning.[br]
+## [color=white]Optional[/color] Parent [Node3D].[br]
+## Used to copy global position and rotation.[br]
+## If set, [member CloudsLP.position] will be ignored.[br]
+## [br][color=yellow]Warning:[/color] The [Node3D] should not be scaled.[br]
+## For scaling atmospheres, use the following:[br]
+## - [member CloudsLP.profile] > [code]Planet > Radius[/code]
+## ([member AtmosphereProfile.planet_radius]).[br]
+## - [member CloudsLP.profile] > [code]Atmoshpere > Height[/code]
+## ([member AtmosphereProfile.atmo_height]).[br]
+## - [member CloudsLP.profile] > [code]Clouds > Noise Adjust > Global
+## Scale[/code] ([member AtmosphereProfile.cld_nsa_global_scale]).[br]
+##[br][color=yellow]Warning:[/color] The [Node3D] should not be a child of the
+## compositor's subtree. Compositor scene awareness is limited, so a relative
+## path must be resolved to find the actual node instance. This is done during
+## initialization or anytime the [Node3D]'s path changes.[br]
+## [br][color=white]Note:[/color] Assigning a different node source will
+## reload shaders.
+@export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Node3D") var parent_source: NodePath:
+	set(value):
+		parent_source = value
+		_parent_source = null
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
+## [color=white]Optional[/color] [Light3D] to drive lighting color and
+## positioning.[br]
 ## [br][color=white]Note:[/color] For non-directional lights, range and
 ## attenuation are ignored.[br]
-## [br][color=yellow]Warning:[/color] The [code]Light3D[/code] should not be a
-## child of the compositor's subtree. Compositor scene awareness is limited,
-## so a relative path must be resolved to find the actual node instance. This
-## is done during initialization or anytime the [code]Light3D[/code]'s path
-## changes.[br]
-## [br][color=white]Note:[/color] Assigning a different light source will
+##[br][color=yellow]Warning:[/color] The [Light3D] should not be a child of the
+## compositor's subtree. Compositor scene awareness is limited, so a relative
+## path must be resolved to find the actual node instance. This is done during
+## initialization or anytime the [Light3D]'s path changes.[br]
+## [br][color=white]Note:[/color] Assigning a different node source will
 ## reload shaders.
 @export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath:
 	set(value):
@@ -170,6 +195,7 @@ var _scaled_down := 1
 var _ovrd_anim_time := 0.0
 var _cloud_anim_time := 0.0
 var _mutex := Mutex.new()
+var _parent_source: Node3D
 var _light_source: Light3D
 var _last_size: Vector2i
 var _scaled_size: Vector2i
@@ -292,9 +318,14 @@ func _load_and_init() -> bool:
 	_print_debug("Load and Init shaders...")
 	
 	if light_source and not _light_source:
-		_find_light_instance()
+		_light_source = await _resolve_node_path(light_source, "Light3D")
 		if not _light_source:
 			_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
+	
+	if parent_source and not _parent_source:
+		_parent_source = await  _resolve_node_path(parent_source, "Node3D")
+		if not _parent_source:
+			_push_error("Could not find parent source \"%s\", make sure parent source is not in compositor's subtree, reassign parent source, and reload" % parent_source)
 	
 	_print_debug("Loading Resources (shaders recompiling)...")
 	
@@ -354,9 +385,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_cleanup(false, true)  # Cleanup data only
 	_print_debug("Allocating longterm data...")
 	
-	if not _config_data or _config_data.size() != 272:
+	if not _config_data or _config_data.size() != 320:
 		_config_data = PackedByteArray()
-		_config_data.resize(272)
+		_config_data.resize(320)
 	
 	var sampler_linear_state := RDSamplerState.new()
 	sampler_linear_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
@@ -666,13 +697,32 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, light_position.z); idx += 4
 	_config_data.encode_float(idx, max_distance); idx += 4
 	
+	var g_pos := position
+	if _parent_source:
+		g_pos = _parent_source.global_position
 	var z_clip_offset := 0.0
 	if flat_world:
 		z_clip_offset = -0.01
-	_config_data.encode_float(idx, position.x); idx += 4
-	_config_data.encode_float(idx, position.y); idx += 4
-	_config_data.encode_float(idx, position.z); idx += 4
+	_config_data.encode_float(idx, g_pos.x); idx += 4
+	_config_data.encode_float(idx, g_pos.y); idx += 4
+	_config_data.encode_float(idx, g_pos.z); idx += 4
 	_config_data.encode_float(idx, profile.planet_radius + z_clip_offset); idx += 4
+	
+	var basis := Basis.IDENTITY
+	if _parent_source:
+		basis = _parent_source.global_basis
+	_config_data.encode_float(idx, basis.x.x); idx += 4
+	_config_data.encode_float(idx, basis.x.y); idx += 4
+	_config_data.encode_float(idx, basis.x.z); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, basis.y.x); idx += 4
+	_config_data.encode_float(idx, basis.y.y); idx += 4
+	_config_data.encode_float(idx, basis.y.z); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, basis.z.x); idx += 4
+	_config_data.encode_float(idx, basis.z.y); idx += 4
+	_config_data.encode_float(idx, basis.z.z); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
 	
 	_config_data.encode_float(idx, profile.atmo_height); idx += 4
 	_config_data.encode_float(idx, profile.cld_s_beers_factor); idx += 4
@@ -764,15 +814,14 @@ func _update_config_data() -> void:
 		_config_data_rid = _rd.uniform_buffer_create(_config_data.size(), _config_data)
 
 
-func _find_light_instance() -> void:
-	if not light_source: return
+func _resolve_node_path(path: NodePath, type := "") -> Node:
+	if not path: return null
 	
-	_print_debug("Attempt to resolve light source from compositor relative path: \"%s\"" % light_source)
+	_print_debug("Attempt to resolve Node from compositor relative NodePath: \"%s\"" % path)
 	var scene_tree: SceneTree = Engine.get_main_loop()
 	if not scene_tree:
-		_print_debug("Could not get scene tree from Engine.get_main_loop()")
-		return
-	_light_source = null
+		_print_debug("Error: Could not get scene tree from Engine.get_main_loop()")
+		return null
 	
 	var root_node: Node = null
 	if Engine.is_editor_hint():
@@ -780,7 +829,7 @@ func _find_light_instance() -> void:
 	elif scene_tree.root.get_child_count() > 0:
 		root_node = scene_tree.root
 	if not root_node:
-		_print_debug("Could not get scene root from tree %s" % scene_tree)
+		_print_debug("Error: Could not get scene root from tree %s" % scene_tree)
 	if not root_node.is_node_ready():
 		_print_debug("Waiting for root node to be ready %s" % root_node)
 		await root_node.ready
@@ -790,39 +839,37 @@ func _find_light_instance() -> void:
 	var skip: Array[StringName] = [".", ".."]
 	var cur_name: StringName
 	var cur_name_index := 0
-	for i in range(light_source.get_name_count()):
-		cur_name = light_source.get_name(i)
+	for i in range(path.get_name_count()):
+		cur_name = path.get_name(i)
 		if cur_name not in skip:
 			cur_name_index = i
 			break
 	if not cur_name:
-		_push_error("Invalid NodePath for Light Source: \"%s\"" % light_source)
+		_push_error("Error: Invalid path for relative NodePath: \"%s\"" % path)
 		return
 	
 	# Search for parent
 	var parents: Array[Node] = root_node.find_children(cur_name, "", true, false)
 	if not parents:
-		_push_error("Failed to locate Light Source \"%s\" by relative path" % cur_name)
+		_push_error("Error: Failed to locate Node \"%s\" by relative NodePath: \"%s\"" % [cur_name, path])
 		return
 	if len(parents) > 1:
-		_push_warn("Potential for incorrect Light Source from relative path, suggest giving the Light's parent \"%s\" a unique name" % cur_name)
+		_push_warn("Warning: Potential for incorrect Node from relative NodePath \"%s\", suggest giving the Nodes's parent \"%s\" a unique name" % [path, cur_name])
 	
-	# Find light from parent using remaining NodePath
-	if cur_name_index < light_source.get_name_count() - 1:
+	# Find Node from parent using remaining NodePath
+	var node: Node = null
+	if cur_name_index < path.get_name_count() - 1:
 		for parent in parents:
-			_light_source = parent.get_node_or_null(light_source.slice(cur_name_index + 1))
-			if _light_source:
-				if _light_source is Light3D:
-					break  # Correct source found
-				else:
-					_light_source = null
-	# Can't search ancestors, last chance: parent might be the Light3D if there's only one
-	elif len(parents) == 1 and parents[0] is Light3D:
-		_light_source = parents[0]
+			node = parent.get_node_or_null(path.slice(cur_name_index + 1))
+			if node:
+				if node.is_class(type):
+					return node
+	# Can't search ancestors, last chance: parent might be the Node if there's only one
+	elif len(parents) == 1 and parents[0].is_class(type):
+		return parents[0]
 	
-	if not _light_source:
-		_push_error("Failed to locate unique Light Source \"%s\" by relative path, either the Light3D needs a unique name (or its parent) or enter the node path manually" % cur_name)
-
+	_push_error("Failed to locate unique Node \"%s\" by relative NodePath \"%s\", either the Node/(one of its parents) needs a unique name or enter the NodePath manually" % [cur_name, path])
+	return null
 
 func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
 	if not _rd:

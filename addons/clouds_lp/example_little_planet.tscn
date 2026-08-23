@@ -51,6 +51,7 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("9_i4nr2")
+parent_source = NodePath("../MeshInstance3D")
 light_source = NodePath("../DirectionalLight3D")
 cloud_quality = ExtResource("1_xo60x")
 profile = SubResource("Resource_5fbl8")
