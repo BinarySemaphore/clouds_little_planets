@@ -10,6 +10,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
 * [Install](#install)
   * [Godot AssetLib](#godot-assetlib)
   * [Direct (from GitHub)](#direct-from-github)
+  * [Upgrading](#upgrading)
 * [Guide](#guide)
   * [Video Guide](#video-guide)
   * [Quick Start (Example)](#quick-start-example)
@@ -61,6 +62,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
 1) Wait for download to complete and another pop-up window
 1) Ensure "_Ignore asset root_" is __enabled__
 1) Click `Install`
+
 ### Direct (from GitHub)
 1) Go to [Releases](https://github.com/BinarySemaphore/clouds_little_planets/releases)
 1) Download the latest `clouds_lp.zip` file
@@ -68,6 +70,19 @@ Native Godot editor integration with reusable Resources and organized inspector 
 1) Find `Import...` on the top right of `AssetLib` window
 1) Select the downloaded `clouds_lp.zip` file and click `Open`
 1) Click `Install`
+
+### Upgrading
+1) Close Godot
+1) Delete directory "*addons/clouds_lp*"
+   - Backup recommend outside of project, in case you have modified resources in the directory (like planet/quality profiles or height gradients)
+   - If you do, in the future, these should be saved with your project, outside of "_addons_"
+1) Manually download and extract the `clouds_lp.zip` file back into "_addons_"
+   - You may be able to reopen Godot and use `AssetLib`, but dependencies will temporarily be broken (another close and reopen may be required)
+1) Reopen Godot
+1) Reimport shaders (otherwise updates may crash Godot):
+   - In Godot, navigate to "*addons/clouds_lp/shaders*"
+   - Select all the "_*.glsl_" files
+   - Right click and select `Reimport`
 
 ## Guide
 Clouds for Little Planets (__CloudsLP__) is a compositor.

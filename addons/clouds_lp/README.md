@@ -5,6 +5,8 @@ Native Godot editor integration with reusable Resources and organized inspector 
 
 * [Features](#features)
 * [Known Issues](#known-issues)
+* [Install](#install)
+  * [Upgrading](#upgrading)
 * [Guide](#guide)
   * [Video Guide](#video-guide)
   * [Quick Start (Example)](#quick-start-example)
@@ -30,6 +32,20 @@ Native Godot editor integration with reusable Resources and organized inspector 
   - Cloud banding in some situations (near walls for dense clouds)
 - Untested: Complex foreground transparency
 - Untested: MSAA
+
+## Install
+### Upgrading
+1) Close Godot
+1) Delete directory "*addons/clouds_lp*"
+   - Backup recommend outside of project, in case you have modified resources in the directory (like planet/quality profiles or height gradients)
+   - If you do, in the future, these should be saved with your project, outside of "_addons_"
+1) Manually download and extract the `clouds_lp.zip` file back into "_addons_"
+   - You may be able to reopen Godot and use `AssetLib`, but dependencies will temporarily be broken (another close and reopen may be required)
+1) Reopen Godot
+1) Reimport shaders (otherwise updates may crash Godot):
+   - In Godot, navigate to "*addons/clouds_lp/shaders*"
+   - Select all the "_*.glsl_" files
+   - Right click and select `Reimport`
 
 ## Guide
 Clouds for Little Planets (__CloudsLP__) is a compositor.
