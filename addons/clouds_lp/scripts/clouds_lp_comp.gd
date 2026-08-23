@@ -252,6 +252,10 @@ func set_anim_time(time: float) -> void:
 func set_parent_source(node: Node3D) -> void:
 	_parent_source = node
 	_ovrd_parent_source = node
+	if node == null and parent_source:
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
 
 
 ## Overrides existing light source (if any) with [param light] without needing
@@ -260,7 +264,7 @@ func set_parent_source(node: Node3D) -> void:
 ## then will reload shaders with the original light source.
 func set_light_source(light: Light3D) -> void:
 	_light_source = light
-	_ovrd_parent_source = light
+	_ovrd_light_source = light
 	if light == null and light_source:
 		_mutex.lock()
 		_reload_shaders = true
@@ -343,7 +347,7 @@ func _load_and_init() -> bool:
 	_print_debug("Load and Init shaders...")
 	
 	if not _light_source:
-		if _ovrd_parent_source:
+		if _ovrd_light_source:
 			_light_source = _ovrd_light_source
 		elif light_source:
 			_light_source = await _resolve_node_path(light_source, "Light3D")
