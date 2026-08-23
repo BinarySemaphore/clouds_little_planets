@@ -196,7 +196,9 @@ var _ovrd_anim_time := 0.0
 var _cloud_anim_time := 0.0
 var _mutex := Mutex.new()
 var _parent_source: Node3D
+var _ovrd_parent_source: Node3D
 var _light_source: Light3D
+var _ovrd_light_source: Light3D
 var _last_size: Vector2i
 var _scaled_size: Vector2i
 var _config_data: PackedByteArray
@@ -236,10 +238,33 @@ func _notification(what: int) -> void:
 ## Overrides all animation times with [param time].[br]
 ## Ignored if set to [code]0.0[/code] or any disabled animations.[br]
 ## [br][color=yellow]Warning:[/color] Using this prevents animations from
-## honoring pause settings like [member CloudsLP.profile] > [code]Clouds > Animation > Pausable[/code]
-## ([member AtmosphereProfile.cld_a_pausable]); pausing will be time will be up to you.
-func override_anim_time(time: float) -> void:
+## honoring pause settings like [member CloudsLP.profile] >
+## [code]Clouds > Animation > Pausable[/code]
+## ([member AtmosphereProfile.cld_a_pausable]); pausing time will be up to you.
+func set_anim_time(time: float) -> void:
 	_ovrd_anim_time = time
+
+
+## Overrides existing parent source (if any) with [param node] without needing
+## to reload shaders.[br]
+## If [param node] is [constant null] and a parent source was previously set,
+## then will reload shaders with the original parent source.
+func set_parent_source(node: Node3D) -> void:
+	_parent_source = node
+	_ovrd_parent_source = node
+
+
+## Overrides existing light source (if any) with [param light] without needing
+## to reload shaders.[br]
+## If [param light] is [constant null] and a light source was previously set,
+## then will reload shaders with the original light source.
+func set_light_source(light: Light3D) -> void:
+	_light_source = light
+	_ovrd_parent_source = light
+	if light == null and light_source:
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
 
 
 func _setup() -> void:
@@ -317,15 +342,21 @@ func _load_and_init() -> bool:
 	_cleanup(true, false)  # Cleanup shaders only
 	_print_debug("Load and Init shaders...")
 	
-	if light_source and not _light_source:
-		_light_source = await _resolve_node_path(light_source, "Light3D")
-		if not _light_source:
-			_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
+	if not _light_source:
+		if _ovrd_parent_source:
+			_light_source = _ovrd_light_source
+		elif light_source:
+			_light_source = await _resolve_node_path(light_source, "Light3D")
+			if not _light_source:
+				_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
 	
-	if parent_source and not _parent_source:
-		_parent_source = await  _resolve_node_path(parent_source, "Node3D")
-		if not _parent_source:
-			_push_error("Could not find parent source \"%s\", make sure parent source is not in compositor's subtree, reassign parent source, and reload" % parent_source)
+	if not _parent_source:
+		if _ovrd_parent_source:
+			_parent_source = _ovrd_parent_source
+		elif parent_source:
+			_parent_source = await  _resolve_node_path(parent_source, "Node3D")
+			if not _parent_source:
+				_push_error("Could not find parent source \"%s\", make sure parent source is not in compositor's subtree, reassign parent source, and reload" % parent_source)
 	
 	_print_debug("Loading Resources (shaders recompiling)...")
 	
