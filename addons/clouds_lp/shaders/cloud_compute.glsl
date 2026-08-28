@@ -7,7 +7,7 @@
 
 layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-layout(r16f, set = 0, binding = 5) uniform image2D inout_depth;
+layout(rgba16f, set = 0, binding = 5) uniform image2D inout_depth;
 
 layout(rgba16f, set = 0, binding = 6) uniform writeonly image2D out_image;
 

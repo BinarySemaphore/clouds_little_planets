@@ -66,13 +66,25 @@ void main() {
 		}
 
 		if (config.data.cloud_enable) {
-			float cloud_depth = imageLoad(in_depth_clouds, uv).r;
-			if (cloud_depth < depth_lim - 0.01) {
-				/* DEBUG: Render combined depth */
-				// depth_lim = cloud_depth;
+			vec4 cloud_depth = imageLoad(in_depth_clouds, uv) * scene.data.z_far;
+			float cloud_near = cloud_depth.r;
+			if (cloud_near < depth_lim) {
 				vec4 cloud_color = imageLoad(in_image_clouds, uv);
-				color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a);
-				color.a = mix(color.a, 1.0, cloud_color.a);
+				float blend = 1.0;
+				// float cloud_far = cloud_depth.g;
+				// if (cloud_far >= depth_lim * 1.1) {
+				// 	float gamma = cloud_depth.b;
+				// 	float ratio = cloud_depth.a;
+				// 	float t = clamp((depth_lim - cloud_near) / max(cloud_far - cloud_near, 1e-5), 0.0, 1.0);
+				// 	float blend = clamp(pow(t, gamma), 0.0, 1.0);
+				// 	/* DEBUG: Render edges applied for blending */
+				// 	// cloud_color = vec4(1.0, 0.0, 0.0, 1.0);
+				// 	// blend = 1.0;
+				// }
+				color.rgb = mix(color.rgb, cloud_color.rgb, cloud_color.a * blend);
+				color.a = mix(color.a, 1.0, cloud_color.a * blend);
+				/* DEBUG: Render combined depth */
+				// depth_lim = cloud_far;
 			}
 		}
 	}
