@@ -34,21 +34,26 @@ void main() {
 	// disagree, allowing for "sandwiching" around geometry edges during
 	// final compositing. Otherwise there are difficult to resolve artifacts
 	// around the geometry edges.
+	int count = 0;
+	float avg_depth = 0.0;
 	float min_depth = MAX_DIST;
 	float max_depth = 0.0;
 	vec4 ndc;
 	vec2 fs_screen_uv;
 	float depth, lin_depth;
-	for (int x = r_min.x; x < r_max.x; x++) {
-		for(int y = r_min.y; y < r_max.y; y++) {
+	for (int x = r_min.x - 2; x < r_max.x + 2; x++) {
+		for(int y = r_min.y - 2; y < r_max.y + 2; y++) {
+			count += 1;
 			fs_screen_uv = get_screen_uv(ivec2(x, y), scene.data.viewport_size);
 			depth = texture(in_depth_sampler, fs_screen_uv).r;
 			ndc = get_ndc(fs_screen_uv, depth);
 			lin_depth = get_depth_linear(scene.data.inv_projection_matrix, ndc);
-			max_depth = max(max_depth, lin_depth);
 			min_depth = min(min_depth, lin_depth);
+			max_depth = max(max_depth, lin_depth);
+			avg_depth += lin_depth;
 		}
 	}
+	avg_depth /= float(count);
 
 	imageStore(out_depth, out_uv, vec4(min_depth, max_depth, 0.0, 0.0));
 }

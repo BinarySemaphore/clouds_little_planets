@@ -10,9 +10,9 @@ layout(set = 0, binding = 1) uniform sampler2D in_depth_sampler;
 
 layout(rgba16f, set = 0, binding = 5) uniform readonly image2D in_depth;
 
-layout(rgba16f, set = 0, binding = 6) uniform readonly image2D in_image;
+layout(rgba16f, set = 0, binding = 6) uniform readonly image2D in_image_near;
 
-layout(rgba16f, set = 0, binding = 7) uniform writeonly image2D out_depth;
+layout(rgba16f, set = 0, binding = 7) uniform readonly image2D in_image_far;
 
 layout(rgba16f, set = 0, binding = 8) uniform writeonly image2D out_image;
 
@@ -40,8 +40,14 @@ void main() {
 	ivec2 uv = ivec2(gl_GlobalInvocationID.xy);
 	if (uv.x >= scene.data.viewport_size.x || uv.y >= scene.data.viewport_size.y) return;
 
-
 	vec2 ratio = params.size / scene.data.viewport_size;
+	float native_depth = native_depth(uv);
+
+	// vec4 cloud_depth_data = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
+	// float cloud_depth_near = cloud_depth_data.r;
+	// float cloud_depth_far = cloud_depth_data.g;
+	// float cloud_sandwich = cloud_depth_data.b;
+
 	vec2 p = (vec2(uv) + 0.5) * ratio - 0.5;
 	vec2 f = fract(p);
 	ivec2 scaled_uv = ivec2(floor(p));
@@ -53,87 +59,73 @@ void main() {
 	ivec2 scaled_uv_01 = clamp(scaled_uv + ivec2(0, 1), uv_min, uv_max);
 	ivec2 scaled_uv_11 = clamp(scaled_uv + ivec2(1, 1), uv_min, uv_max);
 
-	vec4 a = imageLoad(in_image, scaled_uv_00);
-	vec4 b = imageLoad(in_image, scaled_uv_10);
-	vec4 c = imageLoad(in_image, scaled_uv_01);
-	vec4 d = imageLoad(in_image, scaled_uv_11);
-	vec4 lrd_a = imageLoad(in_depth, scaled_uv_00);
-	vec4 lrd_b = imageLoad(in_depth, scaled_uv_10);
-	vec4 lrd_c = imageLoad(in_depth, scaled_uv_01);
-	vec4 lrd_d = imageLoad(in_depth, scaled_uv_11);
-	// float hr_depth = native_depth(uv);
+	// vec4 cloud_dd_00 = imageLoad(in_depth, scaled_uv_00);
+	// vec4 cloud_dd_10 = imageLoad(in_depth, scaled_uv_10);
+	// vec4 cloud_dd_01 = imageLoad(in_depth, scaled_uv_01);
+	// vec4 cloud_dd_11 = imageLoad(in_depth, scaled_uv_11);
+	// vec4 cloud_dd = mix(mix(cloud_dd_00, cloud_dd_10, f.x), mix(cloud_dd_01, cloud_dd_11, f.x), f.y);
+	vec4 cloud_dd = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
+	vec4 a = vec4(0.0);
+	vec4 b = vec4(0.0);
+	vec4 c = vec4(0.0);
+	vec4 d = vec4(0.0);
+	vec4 out_color_image_mix = vec4(0.0);
 
-	// // Standard spatial bilinear weights
-	// float w00_spatial = (1.0 - f.x) * (1.0 - f.y);
-	// float w10_spatial = f.x         * (1.0 - f.y);
-	// float w01_spatial = (1.0 - f.x) * f.y;
-	// float w11_spatial = f.x         * f.y;
+	float blend;
+	// vec4 near_color;
 
-	// // Depth similarity tolerance scale (tweak based on scene depth range/units)
-	// const float DEPTH_SIGMA = scene.data.z_far; 
+	// vec4 cloud_dd = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
+	//bool forward = native_depth < test.r;
 
-	// // Compute depth similarity weights based on Near Depth (R channel)
-	// float w00_depth = exp(-pow(abs(hr_depth - lrd_a.r * scene.data.z_far) / DEPTH_SIGMA, 2.0));
-	// float w10_depth = exp(-pow(abs(hr_depth - lrd_b.r * scene.data.z_far) / DEPTH_SIGMA, 2.0));
-	// float w01_depth = exp(-pow(abs(hr_depth - lrd_c.r * scene.data.z_far) / DEPTH_SIGMA, 2.0));
-	// float w11_depth = exp(-pow(abs(hr_depth - lrd_d.r * scene.data.z_far) / DEPTH_SIGMA, 2.0));
-
-	// // Combined non-normalized weights
-	// float w00 = w00_spatial * w00_depth;
-	// float w10 = w10_spatial * w10_depth;
-	// float w01 = w01_spatial * w01_depth;
-	// float w11 = w11_spatial * w11_depth;
+	a = imageLoad(in_image_far, scaled_uv_00);
+	b = imageLoad(in_image_far, scaled_uv_10);
+	c = imageLoad(in_image_far, scaled_uv_01);
+	d = imageLoad(in_image_far, scaled_uv_11);
+	// vec4 far_color = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+	// a = imageLoad(in_image_near, scaled_uv_00);
+	// b = imageLoad(in_image_near, scaled_uv_10);
+	// c = imageLoad(in_image_near, scaled_uv_01);
+	// d = imageLoad(in_image_near, scaled_uv_11);
+	// vec4 near_color = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 
 
-	// // float hr_depth = native_depth(uv);
-	// // float ab_bias = ;
-	// // float cd_bias = ;
-	// // float lrd_ab = mix(lrd_a, lrd_b, ab_bias);
-	// // float lrd_cd = mix(lrd_c, lrd_d, cd_bias);
-	// // float v_bias = ;
-
-	// float total_w = w00 + w10 + w01 + w11;
-
-	// // Fallback to standard bilinear weights if depth difference rejects all taps
-	// if (total_w < 1e-5) {
-	// w00 = w00_spatial;
-	// w10 = w10_spatial;
-	// w01 = w01_spatial;
-	// w11 = w11_spatial;
-	// total_w = 1.0;
+	// a = imageLoad(in_image_far, scaled_uv_00);
+	// if (cloud_dd_00.b >= 0.5) {
+	// 	blend = clamp(inv_lerp(cloud_dd_00.r, cloud_dd_00.g, native_depth), 0.0, 1.0);
+	// 	near_color = imageLoad(in_image_near, scaled_uv_00);
+	// 	a = mix(near_color, a, blend);
 	// }
-
-	// // Normalized weights for the 4 taps
-	// float n00 = w00 / total_w;
-	// float n10 = w10 / total_w;
-	// float n01 = w01 / total_w;
-	// float n11 = w11 / total_w;
-
-	// // Convert 4 normalized weights into horizontal and vertical mix factors:
-	// // Top row mix ratio (between A and B)
-	// float ab_bias = (n00 + n10 > 1e-5) ? (n10 / (n00 + n10)) : f.x;
-
-	// // Bottom row mix ratio (between C and D)
-	// float cd_bias = (n01 + n11 > 1e-5) ? (n11 / (n01 + n11)) : f.x;
-
-	// // Vertical mix ratio (between Top row and Bottom row)
-	// float v_bias = n01 + n11;
-
-	// vec4 out_color_image_mix = mix(mix(a, b, ab_bias), mix(c, d, cd_bias), v_bias);
-	vec4 out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+	// b = imageLoad(in_image_far, scaled_uv_10);
+	// if (cloud_dd_10.b >= 0.5) {
+	// 	blend = clamp(inv_lerp(cloud_dd_10.r, cloud_dd_10.g, native_depth), 0.0, 1.0);
+	// 	near_color = imageLoad(in_image_near, scaled_uv_10);
+	// 	b = mix(near_color, b, blend);
+	// }
+	// c = imageLoad(in_image_far, scaled_uv_01);
+	// if (cloud_dd_01.b >= 0.5) {
+	// 	blend = clamp(inv_lerp(cloud_dd_01.r, cloud_dd_01.g, native_depth), 0.0, 1.0);
+	// 	near_color = imageLoad(in_image_near, scaled_uv_01);
+	// 	c = mix(near_color, c, blend);
+	// }
+	// d = imageLoad(in_image_far, scaled_uv_11);
+	// if (cloud_dd_11.b >= 0.5) {
+	// 	blend = clamp(inv_lerp(cloud_dd_11.r, cloud_dd_11.g, native_depth), 0.0, 1.0);
+	// 	near_color = imageLoad(in_image_near, scaled_uv_11);
+	// 	d = mix(near_color, d, blend);
+	// }
+	if (native_depth * 0.99 > cloud_dd.r) {
+	out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+	if (cloud_dd.b >= 0.5) {
+		float blend = clamp(inv_lerp(cloud_dd.r, cloud_dd.g, native_depth), 0.0, 1.0);
+		a = imageLoad(in_image_near, scaled_uv_00);
+		b = imageLoad(in_image_near, scaled_uv_10);
+		c = imageLoad(in_image_near, scaled_uv_01);
+		d = imageLoad(in_image_near, scaled_uv_11);
+		vec4 near_color = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+		out_color_image_mix = mix(near_color, out_color_image_mix, blend);
+	}
+	}
+	// out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 
 	imageStore(out_image, uv, out_color_image_mix);
-
-	vec4 out_color_depth_raw = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
-	// a = imageLoad(in_depth, scaled_uv_00);
-	// b = imageLoad(in_depth, scaled_uv_10);
-	// c = imageLoad(in_depth, scaled_uv_01);
-	// d = imageLoad(in_depth, scaled_uv_11);
-	vec4 out_color_depth_mix = vec4(out_color_depth_raw.r, mix(mix(lrd_a, lrd_b, f.x), mix(lrd_c, lrd_d, f.x), f.y).gba);
-	// Retain near depth min hard edge (prevents full empty mixing behind edges)
-	//out_color_depth_mix.r = min(out_color_depth_mix.r, out_color_depth.r);
-	// out_color_depth_mix.g = max(out_color_depth_mix.g, out_color_depth.g);
-	// out_color_depth.r = min(out_color_depth.r, native_depth(uv));
-
-	imageStore(out_depth, uv, out_color_depth_mix);
 }

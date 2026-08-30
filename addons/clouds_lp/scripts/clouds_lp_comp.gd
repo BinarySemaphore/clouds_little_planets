@@ -46,16 +46,18 @@ extends CompositorEffect
 		reload = false
 		if value:
 			_mutex.lock()
+			if _crash_state:
+				_crash_state = false
 			_reload_shaders = true
 			_mutex.unlock()
 ### Write PNGs (see Output) for debugging.
-#@export var write_debug := false:
-	#set(value):
-		#write_debug = false
-		#if value:
-			#_mutex.lock()
-			#_req_write_debug = true
-			#_mutex.unlock()
+@export var write_debug := false:
+	set(value):
+		write_debug = false
+		if value:
+			_mutex.lock()
+			_req_write_debug = true
+			_mutex.unlock()
 ## Render atmosphere.[br]
 ## Overrides [member CloudsLP.profile].
 @export var atmo_enabled := true
@@ -65,6 +67,9 @@ extends CompositorEffect
 ## Render cloud atmospheric lighting.[br]
 ## Overrides [member CloudsLP.profile].
 @export var cloud_atmo_light_enabled := true
+## Allow cloud animations.[br]
+## Overrides [member CloudsLP.profile].
+@export var cloud_animation_enabled := true
 ## Reset cloud animation time back to [code]0[/code].[br]
 ## Auto resets back to [code]false[/code] (it's like a button).[br]
 ## [br][color=white]Note:[/color] See [member CloudsLP.profile] > [code]Clouds > Animation[/code] section for
@@ -184,13 +189,18 @@ var _sampler_nearest: RID
 var _sampler_nearest_nr: RID
 var _config_data_rid: RID
 var _clouds_high: RID
-var _clouds_low: RID
-var _depth_high: RID
+var _clouds_low_near: RID
+var _clouds_low_far: RID
 var _depth_low: RID
 
 var _req_write_debug := false
 var _reload_shaders := true
 var _longterm_uniforms_good := false
+var _crash_state := false:
+	set(value):
+		_crash_state = value
+		if value:
+			_push_error("Unrecovable state: _render_callback() will be ignored until fixed (Reload to cycle)")
 var _scaled_down := 1
 var _ovrd_anim_time := 0.0
 var _cloud_anim_time := 0.0
@@ -331,12 +341,12 @@ func _cleanup(shaders := true, data := true) -> void:
 		if _clouds_high.is_valid():
 			_rd.free_rid(_clouds_high)
 		_clouds_high = RID()
-		if _clouds_low.is_valid():
-			_rd.free_rid(_clouds_low)
-		_clouds_low = RID()
-		if _depth_high.is_valid():
-			_rd.free_rid(_depth_high)
-		_depth_high = RID()
+		if _clouds_low_near.is_valid():
+			_rd.free_rid(_clouds_low_near)
+		_clouds_low_near = RID()
+		if _clouds_low_far.is_valid():
+			_rd.free_rid(_clouds_low_far)
+		_clouds_low_far = RID()
 		if _depth_low.is_valid():
 			_rd.free_rid(_depth_low)
 		_depth_low = RID()
@@ -477,8 +487,8 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	clouds_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	
-	var scaled_clouds_data := PackedByteArray()
-	scaled_clouds_data.resize(scaled_size_area * 4 * 2)  # RGBA channels, 2 bytes
+	var scaled_clouds_near_data := PackedByteArray()
+	scaled_clouds_near_data.resize(scaled_size_area * 4 * 2)  # RGBA channels, 2 bytes
 	var scaled_clouds_format := RDTextureFormat.new()
 	scaled_clouds_format.format = RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT
 	scaled_clouds_format.width = _scaled_size.x
@@ -486,28 +496,28 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	scaled_clouds_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	
-	var depth_data := PackedByteArray()
-	depth_data.resize(size_area * 2)  # Single channel, 2 bytes
-	var depth_format := RDTextureFormat.new()
-	depth_format.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
-	depth_format.width = size.x
-	depth_format.height = size.y
-	depth_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
-							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
+	var scaled_clouds_far_data := PackedByteArray()
+	scaled_clouds_far_data.resize(scaled_size_area * 4 * 2)  # RGBA channels, 2 bytes
 	
 	var scaled_depth_data := PackedByteArray()
-	scaled_depth_data.resize(scaled_size_area * 2)  # Single channel, 2 bytes
+	scaled_depth_data.resize(scaled_size_area * 4 * 2)  # RGBA channel, 2 bytes
 	var scaled_depth_format := RDTextureFormat.new()
-	scaled_depth_format.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
+	scaled_depth_format.format = RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT
 	scaled_depth_format.width = _scaled_size.x
 	scaled_depth_format.height = _scaled_size.y
 	scaled_depth_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	
 	_clouds_high = _rd.texture_create(clouds_format, RDTextureView.new(), [clouds_data])
-	_clouds_low = _rd.texture_create(scaled_clouds_format, RDTextureView.new(), [scaled_clouds_data])
-	_depth_high = _rd.texture_create(depth_format, RDTextureView.new(), [depth_data])
+	_clouds_low_near = _rd.texture_create(scaled_clouds_format, RDTextureView.new(), [scaled_clouds_near_data])
+	_clouds_low_far = _rd.texture_create(scaled_clouds_format, RDTextureView.new(), [scaled_clouds_far_data])
 	_depth_low = _rd.texture_create(scaled_depth_format, RDTextureView.new(), [scaled_depth_data])
+	if not (_clouds_high.is_valid() and _clouds_low_near.is_valid() and
+		_clouds_low_far.is_valid() and _depth_low.is_valid()):
+		_push_error("Failed to create RD Textures: Status %s" %
+			[[_clouds_high, _clouds_low_near, _clouds_low_far, _depth_low]])
+		_crash_state = true
+		return
 	
 	_longterm_uniforms_good = true
 	_print_debug("Ready (longterm data)")
@@ -515,6 +525,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 
 func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -> void:
 	_mutex.lock()
+	if _crash_state:
+		_mutex.unlock()
+		return
 	if _reload_shaders:
 		_reload_shaders = false
 		_load_and_init()
@@ -569,15 +582,15 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 	depth_low_uniform.binding = 5
 	depth_low_uniform.add_id(_depth_low)
 	
-	var clouds_low_uniform: RDUniform = RDUniform.new()
-	clouds_low_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	clouds_low_uniform.binding = 6
-	clouds_low_uniform.add_id(_clouds_low)
+	var clouds_low_near_uniform: RDUniform = RDUniform.new()
+	clouds_low_near_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	clouds_low_near_uniform.binding = 6
+	clouds_low_near_uniform.add_id(_clouds_low_near)
 	
-	var depth_high_uniform: RDUniform = RDUniform.new()
-	depth_high_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	depth_high_uniform.binding = 7
-	depth_high_uniform.add_id(_depth_high)
+	var clouds_low_far_uniform: RDUniform = RDUniform.new()
+	clouds_low_far_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	clouds_low_far_uniform.binding = 7
+	clouds_low_far_uniform.add_id(_clouds_low_far)
 	
 	var clouds_high_uniform: RDUniform = RDUniform.new()
 	clouds_high_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
@@ -642,29 +655,45 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 		#region assign uniforms to shaders
 		var uniform_set_pass_1 := UniformSetCacheRD.get_cache(
 			_shader_scale_down, 0, [
-				depth_image_uniform, depth_low_uniform, scene_ubo_uniform
+				# In
+				depth_image_uniform,
+				scene_ubo_uniform,
+				# Out
+				depth_low_uniform
 			])
 		
 		var uniform_set_pass_2 := UniformSetCacheRD.get_cache(
 			_shader_clouds, 0, [
-				depth_low_uniform, clouds_low_uniform,
-				scene_ubo_uniform, config_uniform,
+				# In
 				height_uniform, noise_mask_uniform,
 				noise_l_uniform, noise_m_uniform, noise_s_uniform,
-				noise_wisp_uniform
+				noise_wisp_uniform,
+				scene_ubo_uniform, config_uniform,
+				# In / Out
+				depth_low_uniform,
+				# Out
+				clouds_low_near_uniform, clouds_low_far_uniform
 			])
 		
 		var uniform_set_pass_3 := UniformSetCacheRD.get_cache(
 			_shader_scale_up, 0, [
-				depth_low_uniform, depth_high_uniform,
-				clouds_low_uniform, clouds_high_uniform, scene_ubo_uniform
+				# In
+				depth_image_uniform,
+				depth_low_uniform,
+				clouds_low_near_uniform, clouds_low_far_uniform,
+				scene_ubo_uniform,
+				# Out
+				clouds_high_uniform
 			])
 		
 		var uniform_set_pass_4 := UniformSetCacheRD.get_cache(
 			_shader_atmo, 0, [
-				depth_image_uniform, color_image_uniform,
-				depth_high_uniform, clouds_high_uniform,
-				scene_ubo_uniform, config_uniform
+				# In
+				depth_image_uniform,
+				clouds_high_uniform,
+				scene_ubo_uniform, config_uniform,
+				# In / Out
+				color_image_uniform
 			])
 		#endregion
 		
@@ -673,6 +702,14 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 		_rd.compute_list_bind_uniform_set(compute_list, uniform_set_pass_1, 0)
 		_rd.compute_list_set_push_constant(compute_list, push_constant, push_constant.size())
 		_rd.compute_list_dispatch(compute_list, dsize_scaled.x, dsize_scaled.y, dsize_scaled.z)
+		
+		#if Engine.is_editor_hint():
+			#_mutex.lock()
+			#if _req_write_debug:
+				#_print_debug("Try save...")
+				#_req_write_debug = false
+				#_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "P1_cloud_low_depth")
+			#_mutex.unlock()
 		
 		_rd.compute_list_add_barrier(compute_list)
 		_rd.compute_list_bind_compute_pipeline(compute_list, _pipeline_pass_2)
@@ -697,10 +734,10 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 			if _req_write_debug:
 				_print_debug("Try save...")
 				_req_write_debug = false
-				_debug_save_rd_texture.call_deferred(_clouds_low, _scaled_size, "cloud_low_color", Image.FORMAT_RGBA16)
-				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "cloud_low_depth", Image.FORMAT_RH)
-				_debug_save_rd_texture.call_deferred(_clouds_high, size, "cloud_high_color")
-				_debug_save_rd_texture.call_deferred(_depth_high, size, "cloud_high_depth", Image.FORMAT_RH)
+				_debug_save_rd_texture.call_deferred(_clouds_low_near, _scaled_size, "P4_clouds_low_near_color")
+				_debug_save_rd_texture.call_deferred(_clouds_low_far, _scaled_size, "P4_clouds_low_far_color")
+				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "P4_cloud_low_depth")#, Image.FORMAT_RGH)
+				_debug_save_rd_texture.call_deferred(_clouds_high, size, "P4_cloud_high_color")
 			_mutex.unlock()
 
 
@@ -708,7 +745,7 @@ func _update_config_data() -> void:
 	var idx := 0
 	var linear_color: Color
 	
-	if profile.cld_a_enabled:
+	if cloud_animation_enabled and profile.cld_a_enabled:
 		if _ovrd_anim_time != 0.0:
 			_cloud_anim_time = _ovrd_anim_time
 		elif not profile.cld_a_pausable or not (Engine.get_main_loop() as SceneTree).paused:
