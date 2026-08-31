@@ -33,6 +33,7 @@ float cloud_density_at_pos(vec3 pos) {
 	if (alt_mask.r <= 0.0) return 0.0;
 
 	pos -= config.data.pos;
+	pos *= config.data.basis;
 
 	float g_scale_sq = alt_mask.g * alt_mask.g;
 	float modified_global_scale = config.data.cl_global_scale * g_scale_sq;
@@ -76,7 +77,14 @@ float cloud_density_at_pos(vec3 pos) {
 	return clamp(density, 0.0, 1.0);
 }
 
-vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, inout float depth) {
+vec4 cloud_march(vec3 start, vec3 dir,
+	float max_travel_dist_near, float max_travel_dist_far,
+	out float near_depth, out float far_depth,
+	out vec4 color_near) {
+	near_depth = MAX_DIST;
+	far_depth = 0.0;
+	color_near = vec4(0.0);
+
 	vec4 color = vec4(0.0);
 	vec3 pos = start;
 	vec3 l_dir = normalize(config.data.light_pos - start);
@@ -99,13 +107,12 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, inout float depth)
 	// Switched to fixed step_size as it works better with embedded objects
 	float step_size = config.data.cl_max_step_size * config.data.cl_global_scale;
 	// float step_size = min(
-	// 	max_travel_dist / float(config.data.cl_steps),
+	// 	max_travel_dist_far / float(config.data.cl_steps),
 	// 	config.data.cl_max_step_size * config.data.cl_global_scale
 	// );
 	float travel_dist = step_size;
-	bool depth_updated = false;
 
-	vec4 color_sample;
+	vec4 color_sample = vec4(0.0);
 	vec3 l_pos, color_atmo_scatter;
 	vec2 hit, planet_hit;
 	float density, scatter_lumin;
@@ -115,17 +122,18 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, inout float depth)
 	}
 
 	for (int i = 0; i < config.data.cl_steps; i++) {
-		if (travel_dist > max_travel_dist) break;
-		if (!depth_updated && color.a > 0.01) {
-			depth = min(depth, travel_dist);
-			depth_updated = true;
+		if (travel_dist <= max_travel_dist_near) {
+			color_near = color;
+			near_depth = travel_dist;
 		}
+		if (travel_dist > max_travel_dist_far) break;
 		if (color.a >= 1.0) break;
 
 		pos = start + dir * travel_dist;
 		density = clamp(cloud_density_at_pos(pos) * config.data.cl_density_scalar, 0.0, 1.0);
 
 		if (density > filter_threshold) {
+			far_depth = travel_dist;
 			color_sample.a = clamp(density, 0.0, 1.0);
 
 			scatter_lumin = 0.0;
@@ -185,7 +193,7 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist, inout float depth)
 			}
 
 			color.rgb = mix(color.rgb, color_sample.rgb, (1.0 - color.a) * color_sample.a);
-			color.a = mix(color.a, 1.0, color_sample.a);
+			color.a += color_sample.a * (1.0 - color.a);
 		}
 		
 		step_size *= config.data.cl_step_scalar * rand_near_one(deband);
@@ -201,8 +209,9 @@ void main() {
 	if (uv.x >= params.size.x || uv.y >= params.size.y) return;
 	seed = rand_seed_2d(vec2(uv));
 
-	// highp float depth_planar = imageLoad(inout_depth, uv).r;
-	float depth_planar = imageLoad(inout_depth, uv).r;
+	// Get min/max depth from scaled down depth (Red and Green respectively)
+	// highp vec2 depth_planar = imageLoad(inout_depth, uv).rg;
+	vec3 depth_planar = imageLoad(inout_depth, uv).rgb;
 	// To get proper screen_uv it's easier to scale up and use viewport_size.
 	// Since params.size is ceil-ed from (viewport_size / params.scale_down),
 	// X or Y may have partial pixels (overscanned); doesn't matter for drawing,
@@ -211,15 +220,26 @@ void main() {
 	vec3 cam_forward = get_cam_forward(scene.data.inv_view_matrix);
 	vec3 cam_pos = get_cam_world_pos(scene.data.inv_view_matrix);
 	vec3 dir = ray_screen(scene.data.inv_view_matrix, scene.data.inv_projection_matrix, screen_uv);
-	// highp float depth_lim = depth_planar / dot(dir, cam_forward);
-	float depth_lim = depth_planar / dot(dir, cam_forward);
-	float depth_result = depth_lim;
-	vec4 color = vec4(0.0);
+	// highp vec2 depth_min_max = depth_planar / dot(dir, cam_forward);
+	// highp float depth_lim_front = depth_min_max.r;
+	// highp float depth_lim_back = depth_min_max.g;
+	vec3 depth_min_max = depth_planar / dot(dir, cam_forward);
+	float depth_lim_front = depth_min_max.r;
+	float depth_lim_back = depth_min_max.g;
+	// Identify depth gradients by comparing near far percent difference
+	float depth_gradient = step(0.01, abs(depth_lim_back - depth_lim_front) / depth_lim_back);
+	float cloud_near_depth = 0.0;
+	float cloud_far_depth = 0.0;
+	vec4 cloud_color_near = vec4(0.0);
+	vec4 cloud_color_far = vec4(0.0);
 
 	#ifdef FLAT_WORLD
 	// Depth past render far plane
-	if (depth_lim >= scene.data.z_far - 0.01) {
-		depth_lim = MAX_DIST;
+	if (depth_lim_front >= scene.data.z_far - 0.01) {
+		depth_lim_front = MAX_DIST;
+	}
+	if (depth_lim_back >= scene.data.z_far - 0.01) {
+		depth_lim_back = MAX_DIST;
 	}
 	#endif
 
@@ -227,7 +247,8 @@ void main() {
 	vec2 hit;
 	vec3 start_pos = vec3(0.0);
 	float atmo_travel_dist = 0.0;
-	float max_travel_dist = 0.0;
+	float max_travel_dist_near = 0.0;
+	float max_travel_dist_far = 0.0;
 	float depth_offset = 0.0;
 
 	#ifdef FLAT_WORLD
@@ -235,61 +256,69 @@ void main() {
 		if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {
 			hit.y = 0.0;
 		}
-		if (hit.y > 0.0 && hit.x <= depth_lim) {
+		if (hit.y > 0.0 && hit.x <= depth_lim_back) {
 			start_pos = cam_pos + dir * hit.x;
 			depth_offset = hit.x;
-			max_travel_dist = min(depth_lim - hit.x, hit.y);
+			max_travel_dist_near = min(depth_lim_front - hit.x, hit.y);
+			max_travel_dist_far = min(depth_lim_back - hit.x, hit.y);
 			is_valid = true;
 		}
 	#else
-		if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
+		if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim_back)) {
 			hit = sphere_intersect_prechecked(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt);
 			// Invalidate any distances beyond dist_limit when used
 			if (config.data.dist_limit > 0.0 && hit.x > config.data.dist_limit) {
 				hit.y = 0.0;
 			}
-			if (hit.y > 0.0 && hit.x <= depth_lim) {
+			if (hit.y > 0.0 && hit.x <= depth_lim_back) {
 				atmo_travel_dist = hit.y;
 				start_pos = cam_pos + dir * hit.x;
 				depth_offset = hit.x;
-				max_travel_dist = min(depth_lim - hit.x, hit.y);
+				max_travel_dist_near = min(depth_lim_front - hit.x, hit.y);
+				max_travel_dist_far = min(depth_lim_back - hit.x, hit.y);
 				is_valid = true;
 			}
 		}
 	#endif
 
 	/* DEBUG: Use ray-sphere for planet (at same size -2.0 radius of atmo) */
-	// depth_lim = scene.data.z_far;
-	// if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim)) {
+	// depth_lim_back = scene.data.z_far;
+	// if (sphere_in_view(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt, depth_lim_back)) {
 	// 	vec2 hit = sphere_intersect_prechecked(cam_pos, dir, config.data.pos, config.data.radius + config.data.atmo_alt);
 	// 	vec2 hit_planet = sphere_intersect_prechecked(cam_pos, dir, config.data.pos, config.data.radius);
-	// 	// overwrite depth_lim with valid distance from planet when hit
+	// 	// overwrite depth_lim_back with valid distance from planet when hit
 	// 	if (hit_planet.y > 0.0) {
-	// 		depth_lim = hit_planet.x;
+	// 		depth_lim_back = hit_planet.x;
 	// 	}
-	// 	if (hit.y > 0.0 && hit.x <= depth_lim) {
+	// 	if (hit.y > 0.0 && hit.x <= depth_lim_back) {
 	// 		start_pos = cam_pos + dir * hit.x;
-	// 		max_travel_dist = min(depth_lim - hit.x, hit.y);
+	// 		max_travel_dist_near = min(depth_lim_front - hit.x, hit.y);
+	// 		max_travel_dist_far = min(depth_lim_back - hit.x, hit.y);
 	// 		is_valid = true;
 	// 	}
 	// }
 
 	if (is_valid) {
 		if (config.data.dist_limit > 0.0) {
-			max_travel_dist = clamp(max_travel_dist, 0.0, config.data.dist_limit);
+			max_travel_dist_far = clamp(max_travel_dist_far, 0.0, config.data.dist_limit);
 		}
 
 		if (config.data.cloud_enable) {
-			float new_depth = MAX_DIST;
-			color = cloud_march(start_pos, dir, max_travel_dist, new_depth);
-			depth_result = min(depth_result, new_depth + depth_offset);
+			cloud_color_far = cloud_march(start_pos, dir,
+				max_travel_dist_near, max_travel_dist_far,
+				cloud_near_depth, cloud_far_depth,
+				cloud_color_near);
+			cloud_near_depth += depth_offset;
+			cloud_far_depth += depth_offset;
+			cloud_color_near *= depth_gradient;
 		}
 
 		/* DEBUG: Draw hits with travel dist ratio */
-		// float travel_ratio = max_travel_dist / (config.data.radius + config.data.atmo_alt);
-		// color = vec4(vec3(0.0, travel_ratio, travel_ratio), 0.9);
+		// float travel_ratio = max_travel_dist_far / (config.data.radius + config.data.atmo_alt);
+		// cloud_color_far = vec4(vec3(0.0, travel_ratio, travel_ratio), 0.9);
 	}
 
-	imageStore(inout_depth, uv, vec4(depth_result, 0.0, 0.0, 0.0));
-	imageStore(out_image, uv, color);
+	imageStore(inout_depth, uv, vec4(cloud_near_depth, cloud_far_depth, depth_gradient, 1.0));
+	imageStore(out_image_near, uv, cloud_color_near);
+	imageStore(out_image_far, uv, cloud_color_far);
 }

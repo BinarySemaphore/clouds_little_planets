@@ -30,7 +30,7 @@ extends Resource
 ## Daylight color.
 @export var atmo_s_color_direct := Color(0.0, 0.506, 0.902)
 ## Sunset color (partial).[br]
-## Sunset color absoption multiplies this. It will darken
+## Sunset color absorption multiplies this. It will darken
 ## (ex: yellow will be red).
 @export var atmo_s_color_tangent := Color(0.98, 0.737, 0.0)
 ## Distance relative to [member AtmosphereProfile.atmo_height] where horizon
@@ -62,7 +62,7 @@ extends Resource
 @export var cld_s_light_scatter := 5.0
 ## Cloud interior lighting.
 @export var cld_s_beers_factor := 6.0
-## Cloud silverlining lighting.
+## Cloud silver-lining lighting.
 @export var cld_s_powder_factor := 6.5
 ## Cloud density multiplier.
 @export var cld_s_density_factor := 1.0
@@ -81,7 +81,7 @@ extends Resource
 @export_subgroup("Noise Adjust", "cld_nsa")
 ## Density from noise multiplication falloff.[br]
 ## [code]0.0[/code] is maximum influence from medium and small.[br]
-## [code]1.0[/code] is zero influence from mdeium and small, large noise only.
+## [code]1.0[/code] is zero influence from medium and small, large noise only.
 @export_range(0.0, 1.0) var cld_nsa_layer_falloff := 0.25
 ## Density from noise threshold range min to max.[br]
 ## Equivalent to density = [code]smoothstep[/code](x, y, noise);[br]

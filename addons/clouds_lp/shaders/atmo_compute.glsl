@@ -11,8 +11,6 @@ layout(set = 0, binding = 1) uniform sampler2D in_depth_sampler;
 
 layout(rgba16f, set = 0, binding = 2) uniform image2D inout_image;
 
-layout(r16f, set = 0, binding = 7) uniform readonly image2D in_depth_clouds;
-
 layout(rgba16f, set = 0, binding = 8) uniform readonly image2D in_image_clouds;
 
 layout(set = 0, binding = 3, std140) uniform readonly uniformBuffer {

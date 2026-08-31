@@ -8,7 +8,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 layout(set = 0, binding = 1) uniform sampler2D in_depth_sampler;
 
-layout(r16f, binding = 5) uniform writeonly image2D out_depth;
+layout(rgba16f, binding = 5) uniform writeonly image2D out_depth;
 
 layout(set = 0, binding = 3, std140) uniform readonly uniformBuffer {
 	GDUBO data;
@@ -28,21 +28,30 @@ void main() {
 	ivec2 r_min = ivec2(floor(vec2(out_uv) * ratio));
 	ivec2 r_max = ivec2(floor(vec2(out_uv + 1) * ratio));
 
+
+	// Get min/max depths for each group of native-res pixels
+	// Low-res vol march can provide a near and far result when min/max depth
+	// disagree, allowing for "sandwiching" around geometry edges during
+	// final compositing. Otherwise there are difficult to resolve artifacts
+	// around the geometry edges.
+	int count = 0;
+	float min_depth = MAX_DIST;
+	float max_depth = 0.0;
 	vec4 ndc;
 	vec2 fs_screen_uv;
-	float depth;
-	// Need max depth, not accum avg so clouds are overdrawn at foreground edges
-	// Will be cleaned up in atmo combine pass
-	float max_depth = 0.0;
-	// Over sample range so cloud overdraws, but is better occulusion results
+	float depth, lin_depth;
+	// Over sample range so cloud overdraws, prevents clipping behind geometry
 	for (int x = r_min.x - 2; x < r_max.x + 2; x++) {
 		for(int y = r_min.y - 2; y < r_max.y + 2; y++) {
+			count += 1;
 			fs_screen_uv = get_screen_uv(ivec2(x, y), scene.data.viewport_size);
 			depth = texture(in_depth_sampler, fs_screen_uv).r;
 			ndc = get_ndc(fs_screen_uv, depth);
-			max_depth = max(max_depth, get_depth_linear(scene.data.inv_projection_matrix, ndc));
+			lin_depth = get_depth_linear(scene.data.inv_projection_matrix, ndc);
+			min_depth = min(min_depth, lin_depth);
+			max_depth = max(max_depth, lin_depth);
 		}
 	}
 
-	imageStore(out_depth, out_uv, vec4(max_depth, 0.0, 0.0, 0.0));
+	imageStore(out_depth, out_uv, vec4(min_depth, max_depth, 0.0, 1.0));
 }

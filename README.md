@@ -1,14 +1,16 @@
-# Clouds for Little Planets (v1.0)
+# Clouds for Little Planets (v1.1)
 Atmospheric and volumetric cloud compositor for spherical and flat worlds for Godot 4.6 or later.
 
 Native Godot editor integration with reusable Resources and organized inspector categories.
 
 * [Features](#features)
   * [Screenshots](#screenshots)
+  * [Preview](#preview)
 * [Known Issues](#known-issues)
 * [Install](#install)
   * [Godot AssetLib](#godot-assetlib)
   * [Direct (from GitHub)](#direct-from-github)
+  * [Upgrading](#upgrading)
 * [Guide](#guide)
   * [Video Guide](#video-guide)
   * [Quick Start (Example)](#quick-start-example)
@@ -16,6 +18,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
   * [Configuring](#configuring)
   * [Creating and Saving Profiles](#creating-and-saving-profiles)
   * [Script Integration](#script-integration)
+  * [Transparent Objects](#transparent-objects)
   * [Custom Modification](#custom-modification)
 * [Performance](#performance)
   * [Bench_01](#bench_01)
@@ -27,12 +30,13 @@ Native Godot editor integration with reusable Resources and organized inspector 
 
 ## Features
 - Atmospheric rendering from ground to space
-- Art-specifc atmosphere controls
+- Art-specific atmosphere controls
 - Volumetric cloud generation with atmospheric lighting
 - Multiple configurable cloud layers
 - Scalable for large planets, toy planets, and flat worlds
 - Planet and quality Resource profiles
 - Time progression (cloud animation)
+- Depth aware upscaling and compositing
 
 ### Screenshots
 | <img src="github/screenshots/20260724_180734.png" width="200"> | <img src="github/screenshots/20260724_180925.png" width="200"> | <img src="github/screenshots/20260724_180901.png" width="200"> |
@@ -40,12 +44,13 @@ Native Godot editor integration with reusable Resources and organized inspector 
 | <img src="github/screenshots/20260724_180749.png" width="200"> | <img src="github/screenshots/20260724_180806.png" width="200"> | <img src="github/screenshots/20260724_180953.png" width="200"> |
 | <img src="github/screenshots/20260804_203810.png" width="200"> | <img src="github/screenshots/20260804_205150.png" width="200"> | |
 
+### Preview
+[![Video Preview](https://img.youtube.com/vi/kXCV3EfYfq0/mqdefault.jpg)](https://youtu.be/kXCV3EfYfq0)
+
 ## Known Issues
 - Embedded objects (like buildings in clouds):
-  - Edges are down scaled
   - Cloud banding in some situations (near walls for dense clouds)
-- Untested: Complex foreground transparency
-- Untested: MSAA
+  - Clear cloud pixel artifacts for near-same depth overlapping edges
 
 ## Install
 ### Godot AssetLib
@@ -57,6 +62,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
 1) Wait for download to complete and another pop-up window
 1) Ensure "_Ignore asset root_" is __enabled__
 1) Click `Install`
+
 ### Direct (from GitHub)
 1) Go to [Releases](https://github.com/BinarySemaphore/clouds_little_planets/releases)
 1) Download the latest `clouds_lp.zip` file
@@ -65,14 +71,25 @@ Native Godot editor integration with reusable Resources and organized inspector 
 1) Select the downloaded `clouds_lp.zip` file and click `Open`
 1) Click `Install`
 
+### Upgrading
+1) Close Godot
+1) Delete directory "*addons/clouds_lp*"
+   - Backup recommend outside of project, in case you have modified resources in the directory (like planet/quality profiles or height gradients)
+   - If you do, in the future, these should be saved with your project, outside of "_addons_"
+1) Manually download and extract the `clouds_lp.zip` file back into "_addons_"
+   - You may be able to reopen Godot and use `AssetLib`, but dependencies will temporarily be broken (another close and reopen may be required)
+1) Reopen Godot
+1) Reimport shaders (otherwise updates may crash Godot):
+   - In Godot, navigate to "*addons/clouds_lp/shaders*"
+   - Select all the "_*.glsl_" files
+   - Right click and select `Reimport`
+
 ## Guide
 Clouds for Little Planets (__CloudsLP__) is a compositor.
-Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
+Compositors can be applied as effects onto any `WorldEnvironment` or `Camera3D` node.
 
 ### Video Guide
-[![Watch the video](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
-
-[https://youtu.be/bK4V6IIE3kU](https://youtu.be/bK4V6IIE3kU)
+[![Video Guide](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
 
 ### Quick Start (Example)
 1) Ensure Godot is 4.6 (native or C#) and in a `Forward+` project
@@ -80,9 +97,9 @@ Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D`
 1) Zoom out to ~20m to view 10m radius little planet
 1) Play with configuration
    1) Click on `WorldEnvironment`
-   1) In the inspector, expand the `Componsitor` and `Compositor Effects`
+   1) In the inspector, expand the `Compositor` and `Compositor Effects`
    1) Click on `CloudsLP` to show settings
-      - Majority of settings are under the `Profile`, for this scene it's named "_AtmoshpereProfile_"
+      - Majority of settings are under the `Profile`, for this scene it's named "_AtmosphereProfile_"
       - Three main sections: `Planet`, `Atmosphere`, and `Clouds`
    - For more details see [Configuring](#configuring)
    - The following resources are external (shared between scenes), to modify them uniquely within this scene only, see below:
@@ -127,7 +144,7 @@ __Cloud Quality__ and planet __Profile__ are resources which can be saved or loa
      > Godot's `CompositorEffect` is not directly in the scene tree and cannot natively resolve a _NodePath_. __CloudsLP__ resolves the _NodePath_ during initialization by locating the first named ancestor which can complete the remaining path. The resulting `Light3D` is cached during runtime. Restrictions from this limitation are documented directly in the parameter's hint/comment. Warnings and errors are given to help fix path any problems.
 
 - Rescaling Everything While Maintaining the Same Visuals:
-  - Resizing __Profile > Atmosphere > Height__ impacts mutliple visuals
+  - Resizing __Profile > Atmosphere > Height__ impacts multiple visuals
   - Atmosphere density and style should automatically adjust
   - Clouds do not automatically scale with height
     - __Profile > Clouds > Noise Adjust > Global Scale__ should be changed by the same ratio as height (if height was 2 and is now 6, then global scale should be multiplied by 3)
@@ -159,6 +176,12 @@ func _ready() -> void:
 	sky_fx.profile.atmo_s_color_direct = Color.PLUM
 ```
 
+### Transparent Objects
+For __StandardMaterial3D__
+1) Ensure __CloudsLP__'s __Effect Callback Type__ is set to `Post Transparent` (default for __CloudsLP__)
+2) In the __StadardMaterial3D__, set __Transparency__ to `Alpha Scissor` or `Alpha Hash`
+   - `Depth Pre-Pass` can also works, but depend on the look attempting to achieve
+
 ### Custom Modification
 #### Shaders
 Shaders are organized into shared `*.glslinc` include files to reduce code duplication.
@@ -168,7 +191,7 @@ Most of the actual code exists in `atmo.glslinc`, `atmo_main.glslinc`, and `clou
 
 Scene info is stored from Godot's render scene data UBO, provided in all shaders as __scene.data__ struct defined in `includes/struct_ubo_godot.glslinc`.
 
-__CloudsLP__ specific info is writen by `clouds_lp_comp.gd` *_update_config_data()* method for the `PackedByteArray` *_config_data* (size enforced by *_alloc_longterm_data()* method).
+__CloudsLP__ specific info is written by `clouds_lp_comp.gd` *_update_config_data()* method for the `PackedByteArray` *_config_data* (size enforced by *_alloc_longterm_data()* method).
 In shaders as __config.data__ struct defined in `includes/struct_ubo_config.glslinc`.
 
 ## Performance
@@ -176,7 +199,7 @@ Frame times are measured using Godot's visual profiler for this specific composi
 ### Bench_01:
 - __Scene__: Earth - avg cloud coverage 2 layers
 - __OS__: Linux
-- __Hardware__: Nvidia GeForce RTX 2060 Max-Q (messured clock at 1.6 GHz)
+- __Hardware__: Nvidia GeForce RTX 2060 Max-Q (measured clock at 1.6 GHz)
 - __VRAM (includes planet textures)__:
   - __Textures__: 209.6 MB
   - __Buffers__: 20.94 MB
@@ -191,7 +214,7 @@ Frame times are measured using Godot's visual profiler for this specific composi
 ### Bench_02:
 - __Scene__: Earth - avg cloud coverage 2 layers
 - __OS__: Linux
-- __Hardware__: AMD Ryzen 9 4900HS with Radeon Graphics (messured clock at 1.8 GHz)
+- __Hardware__: AMD Ryzen 9 4900HS with Radeon Graphics (measured clock at 1.8 GHz)
 - __VRAM (includes planet textures)__:
   - __Textures__: 219.1 MB
   - __Buffers__: 20.94 MB
@@ -227,7 +250,7 @@ This addon repository is its own testable Godot project (Godot 4.6 | Forward+ re
      - `Shift (hold)`: Increase movement speed
      - `Ctrl (hold)`: Decrease movement speed
      - `Arrows`: Rotate
-   - Default speeds can be adjusted from the edtior prior to launching (_Move Speed_ and _Turn Speed_)
+   - Default speeds can be adjusted from the editor prior to launching (_Move Speed_ and _Turn Speed_)
 1) Additional test scenes: `test_flat.tscn` and `example_little_planet.tscn`
 
 ## Thirdparty

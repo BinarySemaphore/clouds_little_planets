@@ -27,6 +27,7 @@ effect_callback_type = 4
 needs_motion_vectors = false
 needs_normal_roughness = false
 script = ExtResource("2_6uqi0")
+parent_source = NodePath("../Earth")
 light_source = NodePath("../OmniLight3D")
 cloud_quality = ExtResource("1_0m0f1")
 profile = ExtResource("2_vbegm")

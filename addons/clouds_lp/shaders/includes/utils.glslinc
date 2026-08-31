@@ -39,6 +39,12 @@ float rand(vec2 s) {
 	return fract(sin(dot(s, vec2(11.097, 47.0654))) * 13196.7298);
 }
 
+float inv_lerp(float edge0, float edge1, float value) {
+	float range = edge1 - edge0;
+	float zero_range = step(0.0001, abs(range));
+	return zero_range * (value - edge0) / mix(1.0, range, zero_range);
+}
+
 vec2 get_screen_uv(ivec2 pixel, vec2 size) {
 	return (vec2(pixel) + 0.5) / size;
 }

@@ -1,10 +1,12 @@
-# Clouds for Little Planets (v1.0)
+# Clouds for Little Planets (v1.1)
 Atmospheric and volumetric cloud compositor for spherical and flat worlds for Godot 4.6 later.
 
 Native Godot editor integration with reusable Resources and organized inspector categories.
 
 * [Features](#features)
 * [Known Issues](#known-issues)
+* [Install](#install)
+  * [Upgrading](#upgrading)
 * [Guide](#guide)
   * [Video Guide](#video-guide)
   * [Quick Start (Example)](#quick-start-example)
@@ -12,33 +14,47 @@ Native Godot editor integration with reusable Resources and organized inspector 
   * [Configuring](#configuring)
   * [Creating and Saving Profiles](#creating-and-saving-profiles)
   * [Script Integration](#script-integration)
+  * [Transparent Objects](#transparent-objects)
   * [Custom Modification](#custom-modification)
 * [Notable Mentions](#notable-mentions)
 
 ## Features
 - Atmospheric rendering from ground to space
-- Art-specifc atmosphere controls
+- Art-specific atmosphere controls
 - Volumetric cloud generation with atmospheric lighting
 - Multiple configurable cloud layers
 - Scalable for large planets, toy planets, and flat worlds
 - Planet and quality Resource profiles
 - Time progression (cloud animation)
+- Depth aware upscaling and compositing
 
 ## Known Issues
 - Embedded objects (like buildings in clouds):
-  - Edges are down scaled
   - Cloud banding in some situations (near walls for dense clouds)
-- Untested: Complex foreground transparency
-- Untested: MSAA
+  - Clear cloud pixel artifacts for near-same depth overlapping edges
+
+## Install
+Project source code and more here: [https://github.com/BinarySemaphore/clouds_little_planets](https://github.com/BinarySemaphore/clouds_little_planets)
+
+### Upgrading
+1) Close Godot
+1) Delete directory "*addons/clouds_lp*"
+   - Backup recommend outside of project, in case you have modified resources in the directory (like planet/quality profiles or height gradients)
+   - If you do, in the future, these should be saved with your project, outside of "_addons_"
+1) Manually download and extract the `clouds_lp.zip` file back into "_addons_"
+   - You may be able to reopen Godot and use `AssetLib`, but dependencies will temporarily be broken (another close and reopen may be required)
+1) Reopen Godot
+1) Reimport shaders (otherwise updates may crash Godot):
+   - In Godot, navigate to "*addons/clouds_lp/shaders*"
+   - Select all the "_*.glsl_" files
+   - Right click and select `Reimport`
 
 ## Guide
 Clouds for Little Planets (__CloudsLP__) is a compositor.
-Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D` node.
+Compositors can be applied as effects onto any `WorldEnvironment` or `Camera3D` node.
 
 ### Video Guide
-[![Watch the video](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
-
-[https://youtu.be/bK4V6IIE3kU](https://youtu.be/bK4V6IIE3kU)
+[![Video Guide](https://img.youtube.com/vi/bK4V6IIE3kU/mqdefault.jpg)](https://youtu.be/bK4V6IIE3kU)
 
 ### Quick Start (Example)
 1) Ensure Godot is 4.6 (native or C#) and in a `Forward+` project
@@ -46,9 +62,9 @@ Compositors can be applied as effects onto any `WorldEnvironement` or `Camera3D`
 1) Zoom out to ~20m to view 10m radius little planet
 1) Play with configuration
    1) Click on `WorldEnvironment`
-   1) In the inspector, expand the `Componsitor` and `Compositor Effects`
+   1) In the inspector, expand the `Compositor` and `Compositor Effects`
    1) Click on `CloudsLP` to show settings
-      - Majority of settings are under the `Profile`, for this scene it's named "_AtmoshpereProfile_"
+      - Majority of settings are under the `Profile`, for this scene it's named "_AtmosphereProfile_"
       - Three main sections: `Planet`, `Atmosphere`, and `Clouds`
    - For more details see [Configuring](#configuring)
    - The following resources are external (shared between scenes), to modify them uniquely within this scene only, see below:
@@ -93,7 +109,7 @@ __Cloud Quality__ and planet __Profile__ are resources which can be saved or loa
      > Godot's `CompositorEffect` is not directly in the scene tree and cannot natively resolve a _NodePath_. __CloudsLP__ resolves the _NodePath_ during initialization by locating the first named ancestor which can complete the remaining path. The resulting `Light3D` is cached during runtime. Restrictions from this limitation are documented directly in the parameter's hint/comment. Warnings and errors are given to help fix path any problems.
 
 - Rescaling Everything While Maintaining the Same Visuals:
-  - Resizing __Profile > Atmosphere > Height__ impacts mutliple visuals
+  - Resizing __Profile > Atmosphere > Height__ impacts multiple visuals
   - Atmosphere density and style should automatically adjust
   - Clouds do not automatically scale with height
     - __Profile > Clouds > Noise Adjust > Global Scale__ should be changed by the same ratio as height (if height was 2 and is now 6, then global scale should be multiplied by 3)
@@ -120,10 +136,16 @@ var sky_fx: CloudsLP
 
 
 func _ready() -> void:
-  sky_fx = CloudsLP.get_from_node(world_env)
-  sky_fx.position = global_position
-  sky_fx.profile.atmo_s_color_direct = Color.PLUM
+   sky_fx = CloudsLP.get_from_node(world_env)
+   sky_fx.position = global_position
+   sky_fx.profile.atmo_s_color_direct = Color.PLUM
 ```
+
+### Transparent Objects
+For __StandardMaterial3D__
+1) Ensure __CloudsLP__'s __Effect Callback Type__ is set to `Post Transparent` (default for __CloudsLP__)
+2) In the __StadardMaterial3D__, set __Transparency__ to `Alpha Scissor` or `Alpha Hash`
+   - `Depth Pre-Pass` can also works, but depend on the look attempting to achieve
 
 ### Custom Modification
 #### Shaders
@@ -134,7 +156,7 @@ Most of the actual code exists in `atmo.glslinc`, `atmo_main.glslinc`, and `clou
 
 Scene info is stored from Godot's render scene data UBO, provided in all shaders as __scene.data__ struct defined in `includes/struct_ubo_godot.glslinc`.
 
-__CloudsLP__ specific info is writen by `clouds_lp_comp.gd` *_update_config_data()* method for the `PackedByteArray` *_config_data* (size enforced by *_alloc_longterm_data()* method).
+__CloudsLP__ specific info is written by `clouds_lp_comp.gd` *_update_config_data()* method for the `PackedByteArray` *_config_data* (size enforced by *_alloc_longterm_data()* method).
 In shaders as __config.data__ struct defined in `includes/struct_ubo_config.glslinc`.
 
 ## Notable Mentions:

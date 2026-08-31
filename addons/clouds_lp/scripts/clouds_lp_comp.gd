@@ -7,11 +7,11 @@ extends CompositorEffect
 ## disabled.
 @export var debug_output := false
 ## [code]In-Editor[/code] Cloud rendering resolution down scaling ratio.[br]
-## Does not impact atmoshpere.[br]
+## Does not impact atmosphere.[br]
 ## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
 ## [br][color=white]Note:[/color] Recommend lower resolutions for editor to
-## reduce resouce load while working, compositor can be toggled on/off with
+## reduce resource load while working, compositor can be toggled on/off with
 ## [member CloudsLP.enabled] (near bottom).[br] 
 ## [br][color=white]Note:[/color] For in-game resolution, see
 ## [member CloudsLP.scale_down_power].
@@ -25,7 +25,7 @@ extends CompositorEffect
 			_longterm_uniforms_good = false
 			_mutex.unlock()
 ## [code]In-Game[/code] Cloud rendering resolution down scaling ratio.[br]
-## Does not impact atmoshpere.[br]
+## Does not impact atmosphere.[br]
 ## [br][color=yellow]Warning:[/color] Major performance impact closer to
 ## [code]Native[/code].[br]
 ## [br][color=white]Note:[/color] For more performance control, see
@@ -46,6 +46,8 @@ extends CompositorEffect
 		reload = false
 		if value:
 			_mutex.lock()
+			if _crash_state:
+				_crash_state = false
 			_reload_shaders = true
 			_mutex.unlock()
 ### Write PNGs (see Output) for debugging.
@@ -65,6 +67,9 @@ extends CompositorEffect
 ## Render cloud atmospheric lighting.[br]
 ## Overrides [member CloudsLP.profile].
 @export var cloud_atmo_light_enabled := true
+## Allow cloud animations.[br]
+## Overrides [member CloudsLP.profile].
+@export var cloud_animation_enabled := true
 ## Reset cloud animation time back to [code]0[/code].[br]
 ## Auto resets back to [code]false[/code] (it's like a button).[br]
 ## [br][color=white]Note:[/color] See [member CloudsLP.profile] > [code]Clouds > Animation[/code] section for
@@ -83,22 +88,47 @@ extends CompositorEffect
 		_mutex.lock()
 		_reload_shaders = true
 		_mutex.unlock()
-## Optional distance limit, useful for simple cloud sampling.[br]
+## [color=white]Optional[/color] distance limit, useful for simple cloud
+## sampling or hard distance limiting.[br]
 ## [br][color=white]Note:[/color] ignored for values <= [code]0.0[/code].
 @export var max_distance := 0.0
 ## Planet position in world-space.[br]
 ## For [member CloudsLP.flat_world] the [code]Y[/code] component is sea-level.
 @export var position := Vector3.ZERO
-## [code]Light3D[/code] to drive lighting color and positioning.[br]
+## [color=white]Optional[/color] Parent [Node3D].[br]
+## Used to copy global position and rotation.[br]
+## If set, [member CloudsLP.position] will be ignored.[br]
+## [br][color=yellow]Warning:[/color] The [Node3D] should not be scaled.[br]
+## For scaling atmospheres, use the following:[br]
+## - [member CloudsLP.profile] > [code]Planet > Radius[/code]
+## ([member AtmosphereProfile.planet_radius]).[br]
+## - [member CloudsLP.profile] > [code]Atmoshpere > Height[/code]
+## ([member AtmosphereProfile.atmo_height]).[br]
+## - [member CloudsLP.profile] > [code]Clouds > Noise Adjust > Global
+## Scale[/code] ([member AtmosphereProfile.cld_nsa_global_scale]).[br]
+##[br][color=yellow]Warning:[/color] The [Node3D] should not be a child of the
+## compositor's subtree. Compositor scene awareness is limited, so a relative
+## path must be resolved to find the actual node instance. This is done during
+## initialization or anytime the [Node3D]'s path changes.[br]
+## [br][color=white]Note:[/color] Assigning a different node source will
+## reload shaders.
+@export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Node3D") var parent_source: NodePath:
+	set(value):
+		parent_source = value
+		_parent_source = null
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
+## [color=white]Optional[/color] [Light3D] to drive lighting color and
+## positioning.[br]
 ## [br][color=white]Note:[/color] For non-directional lights, range and
 ## attenuation are ignored.[br]
-## [br][color=yellow]Warning:[/color] The [code]Light3D[/code] should not be a
-## child of the compositor's subtree. Compositor scene awareness is limited,
-## so a relative path must be resolved to find the actual node instance. This
-## is done during initialization or anytime the [code]Light3D[/code]'s path
-## changes.[br]
-## [br][color=white]Note:[/color] Assigning a different light source will
-## reload shadders.
+##[br][color=yellow]Warning:[/color] The [Light3D] should not be a child of the
+## compositor's subtree. Compositor scene awareness is limited, so a relative
+## path must be resolved to find the actual node instance. This is done during
+## initialization or anytime the [Light3D]'s path changes.[br]
+## [br][color=white]Note:[/color] Assigning a different node source will
+## reload shaders.
 @export_custom(PROPERTY_HINT_NODE_PATH_VALID_TYPES, "Light3D") var light_source: NodePath:
 	set(value):
 		light_source = value
@@ -111,7 +141,7 @@ extends CompositorEffect
 ## [br][color=white]Note:[/color] See [member CloudsLP.scale_down_power] for
 ## more performance control.[br]
 ## [br][color=white]Note:[/color] Assigning a different quality profile will
-## reload shadders.
+## reload shaders.
 @export var cloud_quality: CloudQualityProfile:
 	set(value):
 		cloud_quality = value
@@ -120,7 +150,7 @@ extends CompositorEffect
 		_mutex.unlock()
 ## Atmosphere and Cloud Profile.[br]
 ## [br][color=white]Note:[/color] Assigning a different profile will reload
-## shadders.
+## shaders.
 @export var profile: AtmosphereProfile:
 	set(value):
 		profile = value
@@ -135,7 +165,7 @@ extends CompositorEffect
 ## res://addons/clouds_lp/shaders/cloud_compute_flat.glsl
 @export var shdr_clouds_flat_file: RDShaderFile = preload("uid://cyu4k4xd4ou3e")
 ## res://addons/clouds_lp/shaders/scale_up_bilinear_box.glsl[br]
-## [color=white]Altenatives:[/color][br]
+## [color=white]Alternatives:[/color][br]
 ## res://addons/clouds_lp/shaders/sclae_up_raw.glsl
 @export var shdr_upscaler_file: RDShaderFile = preload("uid://bxdhxwue5ip2x")
 ## res://addons/clouds_lp/shaders/atmo_compute.glsl
@@ -159,17 +189,26 @@ var _sampler_nearest: RID
 var _sampler_nearest_nr: RID
 var _config_data_rid: RID
 var _clouds_high: RID
-var _clouds_low: RID
-var _depth_high: RID
+var _clouds_low_near: RID
+var _clouds_low_far: RID
 var _depth_low: RID
 
 var _req_write_debug := false
 var _reload_shaders := true
 var _longterm_uniforms_good := false
+var _crash_state := false:
+	set(value):
+		_crash_state = value
+		if value:
+			_push_error("Unrecovable state: _render_callback() will be ignored until fixed (Reload to cycle)")
 var _scaled_down := 1
+var _ovrd_anim_time := 0.0
 var _cloud_anim_time := 0.0
 var _mutex := Mutex.new()
+var _parent_source: Node3D
+var _ovrd_parent_source: Node3D
 var _light_source: Light3D
+var _ovrd_light_source: Light3D
 var _last_size: Vector2i
 var _scaled_size: Vector2i
 var _config_data: PackedByteArray
@@ -192,7 +231,7 @@ static func get_from_node(node: Node) -> CloudsLP:
 
 # Called when this resource is constructed.
 func _init() -> void:
-	#region initial kicks to tigger set() calls
+	#region initial kicks to trigger set() calls
 	if Engine.is_editor_hint():
 		scale_down_power_editor = scale_down_power_editor
 	else:
@@ -204,6 +243,42 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		if is_instance_valid(self):
 			_cleanup()
+
+
+## Overrides all animation times with [param time].[br]
+## Ignored if set to [code]0.0[/code] or any disabled animations.[br]
+## [br][color=yellow]Warning:[/color] Using this prevents animations from
+## honoring pause settings like [member CloudsLP.profile] >
+## [code]Clouds > Animation > Pausable[/code]
+## ([member AtmosphereProfile.cld_a_pausable]); pausing time will be up to you.
+func set_anim_time(time: float) -> void:
+	_ovrd_anim_time = time
+
+
+## Overrides existing parent source (if any) with [param node] without needing
+## to reload shaders.[br]
+## If [param node] is [constant null] and a parent source was previously set,
+## then will reload shaders with the original parent source.
+func set_parent_source(node: Node3D) -> void:
+	_parent_source = node
+	_ovrd_parent_source = node
+	if node == null and parent_source:
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
+
+
+## Overrides existing light source (if any) with [param light] without needing
+## to reload shaders.[br]
+## If [param light] is [constant null] and a light source was previously set,
+## then will reload shaders with the original light source.
+func set_light_source(light: Light3D) -> void:
+	_light_source = light
+	_ovrd_light_source = light
+	if light == null and light_source:
+		_mutex.lock()
+		_reload_shaders = true
+		_mutex.unlock()
 
 
 func _setup() -> void:
@@ -266,12 +341,12 @@ func _cleanup(shaders := true, data := true) -> void:
 		if _clouds_high.is_valid():
 			_rd.free_rid(_clouds_high)
 		_clouds_high = RID()
-		if _clouds_low.is_valid():
-			_rd.free_rid(_clouds_low)
-		_clouds_low = RID()
-		if _depth_high.is_valid():
-			_rd.free_rid(_depth_high)
-		_depth_high = RID()
+		if _clouds_low_near.is_valid():
+			_rd.free_rid(_clouds_low_near)
+		_clouds_low_near = RID()
+		if _clouds_low_far.is_valid():
+			_rd.free_rid(_clouds_low_far)
+		_clouds_low_far = RID()
 		if _depth_low.is_valid():
 			_rd.free_rid(_depth_low)
 		_depth_low = RID()
@@ -281,10 +356,21 @@ func _load_and_init() -> bool:
 	_cleanup(true, false)  # Cleanup shaders only
 	_print_debug("Load and Init shaders...")
 	
-	if light_source and not _light_source:
-		_find_light_instance()
-		if not _light_source:
-			_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
+	if not _light_source:
+		if _ovrd_light_source:
+			_light_source = _ovrd_light_source
+		elif light_source:
+			_light_source = await _resolve_node_path(light_source, "Light3D")
+			if not _light_source:
+				_push_error("Could not find light source \"%s\", make sure light source is not in compositor's subtree, reassign light source, and reload" % light_source)
+	
+	if not _parent_source:
+		if _ovrd_parent_source:
+			_parent_source = _ovrd_parent_source
+		elif parent_source:
+			_parent_source = await  _resolve_node_path(parent_source, "Node3D")
+			if not _parent_source:
+				_push_error("Could not find parent source \"%s\", make sure parent source is not in compositor's subtree, reassign parent source, and reload" % parent_source)
 	
 	_print_debug("Loading Resources (shaders recompiling)...")
 	
@@ -344,9 +430,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	_cleanup(false, true)  # Cleanup data only
 	_print_debug("Allocating longterm data...")
 	
-	if not _config_data or _config_data.size() != 272:
+	if not _config_data or _config_data.size() != 320:
 		_config_data = PackedByteArray()
-		_config_data.resize(272)
+		_config_data.resize(320)
 	
 	var sampler_linear_state := RDSamplerState.new()
 	sampler_linear_state.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
@@ -401,8 +487,8 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	clouds_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	
-	var scaled_clouds_data := PackedByteArray()
-	scaled_clouds_data.resize(scaled_size_area * 4 * 2)  # RGBA channels, 2 bytes
+	var scaled_clouds_near_data := PackedByteArray()
+	scaled_clouds_near_data.resize(scaled_size_area * 4 * 2)  # RGBA channels, 2 bytes
 	var scaled_clouds_format := RDTextureFormat.new()
 	scaled_clouds_format.format = RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT
 	scaled_clouds_format.width = _scaled_size.x
@@ -410,28 +496,28 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 	scaled_clouds_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	
-	var depth_data := PackedByteArray()
-	depth_data.resize(size_area * 2)  # Single channel, 2 bytes
-	var depth_format := RDTextureFormat.new()
-	depth_format.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
-	depth_format.width = size.x
-	depth_format.height = size.y
-	depth_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
-							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
+	var scaled_clouds_far_data := PackedByteArray()
+	scaled_clouds_far_data.resize(scaled_size_area * 4 * 2)  # RGBA channels, 2 bytes
 	
 	var scaled_depth_data := PackedByteArray()
-	scaled_depth_data.resize(scaled_size_area * 2)  # Single channel, 2 bytes
+	scaled_depth_data.resize(scaled_size_area * 4 * 2)  # RGBA channel, 2 bytes
 	var scaled_depth_format := RDTextureFormat.new()
-	scaled_depth_format.format = RenderingDevice.DATA_FORMAT_R16_SFLOAT
+	scaled_depth_format.format = RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT
 	scaled_depth_format.width = _scaled_size.x
 	scaled_depth_format.height = _scaled_size.y
 	scaled_depth_format.usage_bits = RenderingDevice.TEXTURE_USAGE_STORAGE_BIT | \
 							  RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT
 	
 	_clouds_high = _rd.texture_create(clouds_format, RDTextureView.new(), [clouds_data])
-	_clouds_low = _rd.texture_create(scaled_clouds_format, RDTextureView.new(), [scaled_clouds_data])
-	_depth_high = _rd.texture_create(depth_format, RDTextureView.new(), [depth_data])
+	_clouds_low_near = _rd.texture_create(scaled_clouds_format, RDTextureView.new(), [scaled_clouds_near_data])
+	_clouds_low_far = _rd.texture_create(scaled_clouds_format, RDTextureView.new(), [scaled_clouds_far_data])
 	_depth_low = _rd.texture_create(scaled_depth_format, RDTextureView.new(), [scaled_depth_data])
+	if not (_clouds_high.is_valid() and _clouds_low_near.is_valid() and
+		_clouds_low_far.is_valid() and _depth_low.is_valid()):
+		_push_error("Failed to create RD Textures: Status %s" %
+			[[_clouds_high, _clouds_low_near, _clouds_low_far, _depth_low]])
+		_crash_state = true
+		return
 	
 	_longterm_uniforms_good = true
 	_print_debug("Ready (longterm data)")
@@ -439,6 +525,9 @@ func _alloc_longterm_data(size: Vector2i) -> void:
 
 func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -> void:
 	_mutex.lock()
+	if _crash_state:
+		_mutex.unlock()
+		return
 	if _reload_shaders:
 		_reload_shaders = false
 		_load_and_init()
@@ -493,15 +582,15 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 	depth_low_uniform.binding = 5
 	depth_low_uniform.add_id(_depth_low)
 	
-	var clouds_low_uniform: RDUniform = RDUniform.new()
-	clouds_low_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	clouds_low_uniform.binding = 6
-	clouds_low_uniform.add_id(_clouds_low)
+	var clouds_low_near_uniform: RDUniform = RDUniform.new()
+	clouds_low_near_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	clouds_low_near_uniform.binding = 6
+	clouds_low_near_uniform.add_id(_clouds_low_near)
 	
-	var depth_high_uniform: RDUniform = RDUniform.new()
-	depth_high_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
-	depth_high_uniform.binding = 7
-	depth_high_uniform.add_id(_depth_high)
+	var clouds_low_far_uniform: RDUniform = RDUniform.new()
+	clouds_low_far_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
+	clouds_low_far_uniform.binding = 7
+	clouds_low_far_uniform.add_id(_clouds_low_far)
 	
 	var clouds_high_uniform: RDUniform = RDUniform.new()
 	clouds_high_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_IMAGE
@@ -566,29 +655,45 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 		#region assign uniforms to shaders
 		var uniform_set_pass_1 := UniformSetCacheRD.get_cache(
 			_shader_scale_down, 0, [
-				depth_image_uniform, depth_low_uniform, scene_ubo_uniform
+				# In
+				depth_image_uniform,
+				scene_ubo_uniform,
+				# Out
+				depth_low_uniform
 			])
 		
 		var uniform_set_pass_2 := UniformSetCacheRD.get_cache(
 			_shader_clouds, 0, [
-				depth_low_uniform, clouds_low_uniform,
-				scene_ubo_uniform, config_uniform,
+				# In
 				height_uniform, noise_mask_uniform,
 				noise_l_uniform, noise_m_uniform, noise_s_uniform,
-				noise_wisp_uniform
+				noise_wisp_uniform,
+				scene_ubo_uniform, config_uniform,
+				# In / Out
+				depth_low_uniform,
+				# Out
+				clouds_low_near_uniform, clouds_low_far_uniform
 			])
 		
 		var uniform_set_pass_3 := UniformSetCacheRD.get_cache(
 			_shader_scale_up, 0, [
-				depth_low_uniform, depth_high_uniform,
-				clouds_low_uniform, clouds_high_uniform, scene_ubo_uniform
+				# In
+				depth_image_uniform,
+				depth_low_uniform,
+				clouds_low_near_uniform, clouds_low_far_uniform,
+				scene_ubo_uniform,
+				# Out
+				clouds_high_uniform
 			])
 		
 		var uniform_set_pass_4 := UniformSetCacheRD.get_cache(
 			_shader_atmo, 0, [
-				depth_image_uniform, color_image_uniform,
-				depth_high_uniform, clouds_high_uniform,
-				scene_ubo_uniform, config_uniform
+				# In
+				depth_image_uniform,
+				clouds_high_uniform,
+				scene_ubo_uniform, config_uniform,
+				# In / Out
+				color_image_uniform
 			])
 		#endregion
 		
@@ -597,6 +702,14 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 		_rd.compute_list_bind_uniform_set(compute_list, uniform_set_pass_1, 0)
 		_rd.compute_list_set_push_constant(compute_list, push_constant, push_constant.size())
 		_rd.compute_list_dispatch(compute_list, dsize_scaled.x, dsize_scaled.y, dsize_scaled.z)
+		
+		#if Engine.is_editor_hint():
+			#_mutex.lock()
+			#if _req_write_debug:
+				#_print_debug("Try save...")
+				#_req_write_debug = false
+				#_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "P1_cloud_low_depth")
+			#_mutex.unlock()
 		
 		_rd.compute_list_add_barrier(compute_list)
 		_rd.compute_list_bind_compute_pipeline(compute_list, _pipeline_pass_2)
@@ -621,10 +734,10 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 			if _req_write_debug:
 				_print_debug("Try save...")
 				_req_write_debug = false
-				_debug_save_rd_texture.call_deferred(_clouds_low, _scaled_size, "cloud_low_color", Image.FORMAT_RGBA16)
-				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "cloud_low_depth", Image.FORMAT_RH)
-				_debug_save_rd_texture.call_deferred(_clouds_high, size, "cloud_high_color")
-				_debug_save_rd_texture.call_deferred(_depth_high, size, "cloud_high_depth", Image.FORMAT_RH)
+				_debug_save_rd_texture.call_deferred(_clouds_low_near, _scaled_size, "P4_clouds_low_near_color")
+				_debug_save_rd_texture.call_deferred(_clouds_low_far, _scaled_size, "P4_clouds_low_far_color")
+				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "P4_cloud_low_depth")
+				_debug_save_rd_texture.call_deferred(_clouds_high, size, "P4_cloud_high_color")
 			_mutex.unlock()
 
 
@@ -632,8 +745,10 @@ func _update_config_data() -> void:
 	var idx := 0
 	var linear_color: Color
 	
-	if profile.cld_a_enabled:
-		if not profile.cld_a_pausable or not (Engine.get_main_loop() as SceneTree).paused:
+	if cloud_animation_enabled and profile.cld_a_enabled:
+		if _ovrd_anim_time != 0.0:
+			_cloud_anim_time = _ovrd_anim_time
+		elif not profile.cld_a_pausable or not (Engine.get_main_loop() as SceneTree).paused:
 			_cloud_anim_time += -1.0 if profile.cld_a_reverse else 1.0
 	
 	var light_position: Vector3
@@ -654,13 +769,32 @@ func _update_config_data() -> void:
 	_config_data.encode_float(idx, light_position.z); idx += 4
 	_config_data.encode_float(idx, max_distance); idx += 4
 	
+	var g_pos := position
+	if _parent_source:
+		g_pos = _parent_source.global_position
 	var z_clip_offset := 0.0
 	if flat_world:
 		z_clip_offset = -0.01
-	_config_data.encode_float(idx, position.x); idx += 4
-	_config_data.encode_float(idx, position.y); idx += 4
-	_config_data.encode_float(idx, position.z); idx += 4
+	_config_data.encode_float(idx, g_pos.x); idx += 4
+	_config_data.encode_float(idx, g_pos.y); idx += 4
+	_config_data.encode_float(idx, g_pos.z); idx += 4
 	_config_data.encode_float(idx, profile.planet_radius + z_clip_offset); idx += 4
+	
+	var basis := Basis.IDENTITY
+	if _parent_source:
+		basis = _parent_source.global_basis
+	_config_data.encode_float(idx, basis.x.x); idx += 4
+	_config_data.encode_float(idx, basis.x.y); idx += 4
+	_config_data.encode_float(idx, basis.x.z); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, basis.y.x); idx += 4
+	_config_data.encode_float(idx, basis.y.y); idx += 4
+	_config_data.encode_float(idx, basis.y.z); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
+	_config_data.encode_float(idx, basis.z.x); idx += 4
+	_config_data.encode_float(idx, basis.z.y); idx += 4
+	_config_data.encode_float(idx, basis.z.z); idx += 4
+	_config_data.encode_float(idx, 0.0); idx += 4
 	
 	_config_data.encode_float(idx, profile.atmo_height); idx += 4
 	_config_data.encode_float(idx, profile.cld_s_beers_factor); idx += 4
@@ -752,23 +886,22 @@ func _update_config_data() -> void:
 		_config_data_rid = _rd.uniform_buffer_create(_config_data.size(), _config_data)
 
 
-func _find_light_instance() -> void:
-	if not light_source: return
+func _resolve_node_path(path: NodePath, type := "") -> Node:
+	if not path: return null
 	
-	_print_debug("Attempt to resolve light source from compositor relative path: \"%s\"" % light_source)
+	_print_debug("Attempt to resolve Node from compositor relative NodePath: \"%s\"" % path)
 	var scene_tree: SceneTree = Engine.get_main_loop()
 	if not scene_tree:
-		_print_debug("Could not get scene tree from Engine.get_main_loop()")
-		return
-	_light_source = null
+		_print_debug("Error: Could not get scene tree from Engine.get_main_loop()")
+		return null
 	
 	var root_node: Node = null
 	if Engine.is_editor_hint():
 		root_node = scene_tree.edited_scene_root
 	elif scene_tree.root.get_child_count() > 0:
-		root_node = scene_tree.root.get_child(0)
+		root_node = scene_tree.root
 	if not root_node:
-		_print_debug("Could not get scene root from tree %s" % scene_tree)
+		_print_debug("Error: Could not get scene root from tree %s" % scene_tree)
 	if not root_node.is_node_ready():
 		_print_debug("Waiting for root node to be ready %s" % root_node)
 		await root_node.ready
@@ -778,33 +911,37 @@ func _find_light_instance() -> void:
 	var skip: Array[StringName] = [".", ".."]
 	var cur_name: StringName
 	var cur_name_index := 0
-	for i in range(light_source.get_name_count()):
-		cur_name = light_source.get_name(i)
+	for i in range(path.get_name_count()):
+		cur_name = path.get_name(i)
 		if cur_name not in skip:
 			cur_name_index = i
 			break
-	if not cur_name: return
+	if not cur_name:
+		_push_error("Error: Invalid path for relative NodePath: \"%s\"" % path)
+		return
 	
 	# Search for parent
-	var parents: Array[Node] = root_node.find_children(cur_name)
+	var parents: Array[Node] = root_node.find_children(cur_name, "", true, false)
 	if not parents:
-		_push_error("Failed to locate Light Source parent by relative path")
+		_push_error("Error: Failed to locate Node \"%s\" by relative NodePath: \"%s\"" % [cur_name, path])
 		return
 	if len(parents) > 1:
-		_push_warn("Potential for incorrect Light Source from relative path, suggest giving the Light's parent \"%s\" a unique name" % cur_name)
+		_push_warn("Warning: Potential for incorrect Node from relative NodePath \"%s\", suggest giving the Nodes's parent \"%s\" a unique name" % [path, cur_name])
 	
-	# Find light from parent using remaining NodePath
-	if cur_name_index < light_source.get_name_count() - 1:
+	# Find Node from parent using remaining NodePath
+	var node: Node = null
+	if cur_name_index < path.get_name_count() - 1:
 		for parent in parents:
-			_light_source = parent.get_node_or_null(light_source.slice(cur_name_index + 1))
-			if _light_source:
-				break  # Correct source found
-	else:
-		if len(parents) > 1:
-			_push_error("Failed to locate unique Light Source by relative path")
-			return
-		_light_source = parents[0]
-
+			node = parent.get_node_or_null(path.slice(cur_name_index + 1))
+			if node:
+				if node.is_class(type):
+					return node
+	# Can't search ancestors, last chance: parent might be the Node if there's only one
+	elif len(parents) == 1 and parents[0].is_class(type):
+		return parents[0]
+	
+	_push_error("Failed to locate unique Node \"%s\" by relative NodePath \"%s\", either the Node/(one of its parents) needs a unique name or enter the NodePath manually" % [cur_name, path])
+	return null
 
 func _debug_save_rd_texture(tex_rid: RID, size: Vector2i, fname := "clouds_lp_debug", format: Image.Format = Image.FORMAT_RGBAH) -> void:
 	if not _rd:
