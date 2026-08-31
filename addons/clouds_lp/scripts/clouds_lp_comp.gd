@@ -51,13 +51,13 @@ extends CompositorEffect
 			_reload_shaders = true
 			_mutex.unlock()
 ### Write PNGs (see Output) for debugging.
-@export var write_debug := false:
-	set(value):
-		write_debug = false
-		if value:
-			_mutex.lock()
-			_req_write_debug = true
-			_mutex.unlock()
+#@export var write_debug := false:
+	#set(value):
+		#write_debug = false
+		#if value:
+			#_mutex.lock()
+			#_req_write_debug = true
+			#_mutex.unlock()
 ## Render atmosphere.[br]
 ## Overrides [member CloudsLP.profile].
 @export var atmo_enabled := true
@@ -736,7 +736,7 @@ func _render_callback(_p_effect_callback_type: int, p_render_data: RenderData) -
 				_req_write_debug = false
 				_debug_save_rd_texture.call_deferred(_clouds_low_near, _scaled_size, "P4_clouds_low_near_color")
 				_debug_save_rd_texture.call_deferred(_clouds_low_far, _scaled_size, "P4_clouds_low_far_color")
-				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "P4_cloud_low_depth")#, Image.FORMAT_RGH)
+				_debug_save_rd_texture.call_deferred(_depth_low, _scaled_size, "P4_cloud_low_depth")
 				_debug_save_rd_texture.call_deferred(_clouds_high, size, "P4_cloud_high_color")
 			_mutex.unlock()
 

@@ -4,9 +4,7 @@ extends Camera3D
 @export var local_turning := false
 @export var move_speed := 5.0
 @export var turn_speed := 1.5
-## Only applies with [code]auto_align[/code].[br]
-## Values less than [color=white]zero[/color] disable minimum.
-@export var min_altitude := -1.0
+@export var min_altitude := 0.0
 
 
 func _process(delta: float) -> void:
@@ -57,6 +55,9 @@ func _process(delta: float) -> void:
 		var back := right.cross(up).normalized()
 		basis = Basis(right, up, back)
 		quaternion = Quaternion(back, old_back) * quaternion
+	else:
+		if position.y < min_altitude:
+			position.y = min_altitude
 	if local_turning:
 		var delta_quat := Quaternion(Vector3.UP, rel_rotate.y * turn_speed * delta)
 		delta_quat *= Quaternion(Vector3.RIGHT, rel_rotate.x * turn_speed * delta)

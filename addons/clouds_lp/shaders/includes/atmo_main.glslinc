@@ -72,8 +72,5 @@ void main() {
 		}
 	}
 
-	/* DEBUG: Render combined depth */
-	// color = vec4(vec3(depth_lim / scene.data.z_far, color.g, color.b), 1.0);
-
 	imageStore(inout_image, uv, color);
 }

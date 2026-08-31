@@ -35,12 +35,12 @@ void main() {
 	// final compositing. Otherwise there are difficult to resolve artifacts
 	// around the geometry edges.
 	int count = 0;
-	float avg_depth = 0.0;
 	float min_depth = MAX_DIST;
 	float max_depth = 0.0;
 	vec4 ndc;
 	vec2 fs_screen_uv;
 	float depth, lin_depth;
+	// Over sample range so cloud overdraws, prevents clipping behind geometry
 	for (int x = r_min.x - 2; x < r_max.x + 2; x++) {
 		for(int y = r_min.y - 2; y < r_max.y + 2; y++) {
 			count += 1;
@@ -50,10 +50,8 @@ void main() {
 			lin_depth = get_depth_linear(scene.data.inv_projection_matrix, ndc);
 			min_depth = min(min_depth, lin_depth);
 			max_depth = max(max_depth, lin_depth);
-			avg_depth += lin_depth;
 		}
 	}
-	avg_depth /= float(count);
 
-	imageStore(out_depth, out_uv, vec4(min_depth, max_depth, 0.0, 0.0));
+	imageStore(out_depth, out_uv, vec4(min_depth, max_depth, 0.0, 1.0));
 }

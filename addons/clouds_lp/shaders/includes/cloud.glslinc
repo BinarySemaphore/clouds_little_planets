@@ -77,7 +77,10 @@ float cloud_density_at_pos(vec3 pos) {
 	return clamp(density, 0.0, 1.0);
 }
 
-vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist_near, float max_travel_dist_far, out float near_depth, out float far_depth, out vec4 color_near) {
+vec4 cloud_march(vec3 start, vec3 dir,
+	float max_travel_dist_near, float max_travel_dist_far,
+	out float near_depth, out float far_depth,
+	out vec4 color_near) {
 	near_depth = MAX_DIST;
 	far_depth = 0.0;
 	color_near = vec4(0.0);
@@ -123,8 +126,6 @@ vec4 cloud_march(vec3 start, vec3 dir, float max_travel_dist_near, float max_tra
 		if (color.a >= 1.0) break;
 		if (travel_dist <= max_travel_dist_near) {
 			color_near = color;
-		}
-		if (color.a > 0.01 && travel_dist < near_depth) {
 			near_depth = travel_dist;
 		}
 
@@ -210,7 +211,7 @@ void main() {
 
 	// Get min/max depth from scaled down depth (Red and Green respectively)
 	// highp vec2 depth_planar = imageLoad(inout_depth, uv).rg;
-	vec2 depth_planar = imageLoad(inout_depth, uv).rg;
+	vec3 depth_planar = imageLoad(inout_depth, uv).rgb;
 	// To get proper screen_uv it's easier to scale up and use viewport_size.
 	// Since params.size is ceil-ed from (viewport_size / params.scale_down),
 	// X or Y may have partial pixels (overscanned); doesn't matter for drawing,
@@ -222,7 +223,7 @@ void main() {
 	// highp vec2 depth_min_max = depth_planar / dot(dir, cam_forward);
 	// highp float depth_lim_front = depth_min_max.r;
 	// highp float depth_lim_back = depth_min_max.g;
-	vec2 depth_min_max = depth_planar / dot(dir, cam_forward);
+	vec3 depth_min_max = depth_planar / dot(dir, cam_forward);
 	float depth_lim_front = depth_min_max.r;
 	float depth_lim_back = depth_min_max.g;
 	float sandwich_edge = 0.0;
@@ -302,11 +303,14 @@ void main() {
 		}
 
 		if (config.data.cloud_enable) {
-			cloud_color_far = cloud_march(start_pos, dir, max_travel_dist_near, max_travel_dist_far, cloud_near_depth, cloud_far_depth, cloud_color_near);
+			cloud_color_far = cloud_march(start_pos, dir,
+				max_travel_dist_near, max_travel_dist_far,
+				cloud_near_depth, cloud_far_depth,
+				cloud_color_near);
 			cloud_near_depth += depth_offset;
 			cloud_far_depth += depth_offset;
-			sandwich_edge = step(0.0001, abs(max_travel_dist_far - max_travel_dist_near));
-			//cloud_color_near *= sandwich_edge;
+			sandwich_edge = step(0.001, abs(max_travel_dist_far - max_travel_dist_near) / max_travel_dist_far);
+			cloud_color_near *= sandwich_edge;
 		}
 
 		/* DEBUG: Draw hits with travel dist ratio */

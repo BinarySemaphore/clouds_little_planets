@@ -43,11 +43,6 @@ void main() {
 	vec2 ratio = params.size / scene.data.viewport_size;
 	float native_depth = native_depth(uv);
 
-	// vec4 cloud_depth_data = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
-	// float cloud_depth_near = cloud_depth_data.r;
-	// float cloud_depth_far = cloud_depth_data.g;
-	// float cloud_sandwich = cloud_depth_data.b;
-
 	vec2 p = (vec2(uv) + 0.5) * ratio - 0.5;
 	vec2 f = fract(p);
 	ivec2 scaled_uv = ivec2(floor(p));
@@ -59,73 +54,40 @@ void main() {
 	ivec2 scaled_uv_01 = clamp(scaled_uv + ivec2(0, 1), uv_min, uv_max);
 	ivec2 scaled_uv_11 = clamp(scaled_uv + ivec2(1, 1), uv_min, uv_max);
 
-	// vec4 cloud_dd_00 = imageLoad(in_depth, scaled_uv_00);
-	// vec4 cloud_dd_10 = imageLoad(in_depth, scaled_uv_10);
-	// vec4 cloud_dd_01 = imageLoad(in_depth, scaled_uv_01);
-	// vec4 cloud_dd_11 = imageLoad(in_depth, scaled_uv_11);
-	// vec4 cloud_dd = mix(mix(cloud_dd_00, cloud_dd_10, f.x), mix(cloud_dd_01, cloud_dd_11, f.x), f.y);
-	vec4 cloud_dd = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
-	vec4 a = vec4(0.0);
-	vec4 b = vec4(0.0);
-	vec4 c = vec4(0.0);
-	vec4 d = vec4(0.0);
-	vec4 out_color_image_mix = vec4(0.0);
-
 	float blend;
-	// vec4 near_color;
+	vec4 near_color;
+	vec4 out_color_image_mix = vec4(0.0);
+	vec4 a = imageLoad(in_image_far, scaled_uv_00);
+	vec4 b = imageLoad(in_image_far, scaled_uv_10);
+	vec4 c = imageLoad(in_image_far, scaled_uv_01);
+	vec4 d = imageLoad(in_image_far, scaled_uv_11);
 
-	// vec4 cloud_dd = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
-	//bool forward = native_depth < test.r;
+	vec4 cloud_dd_00 = imageLoad(in_depth, scaled_uv_00);
+	vec4 cloud_dd_10 = imageLoad(in_depth, scaled_uv_10);
+	vec4 cloud_dd_01 = imageLoad(in_depth, scaled_uv_01);
+	vec4 cloud_dd_11 = imageLoad(in_depth, scaled_uv_11);
 
-	a = imageLoad(in_image_far, scaled_uv_00);
-	b = imageLoad(in_image_far, scaled_uv_10);
-	c = imageLoad(in_image_far, scaled_uv_01);
-	d = imageLoad(in_image_far, scaled_uv_11);
-	// vec4 far_color = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-	// a = imageLoad(in_image_near, scaled_uv_00);
-	// b = imageLoad(in_image_near, scaled_uv_10);
-	// c = imageLoad(in_image_near, scaled_uv_01);
-	// d = imageLoad(in_image_near, scaled_uv_11);
-	// vec4 near_color = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-
-
-	// a = imageLoad(in_image_far, scaled_uv_00);
-	// if (cloud_dd_00.b >= 0.5) {
-	// 	blend = clamp(inv_lerp(cloud_dd_00.r, cloud_dd_00.g, native_depth), 0.0, 1.0);
-	// 	near_color = imageLoad(in_image_near, scaled_uv_00);
-	// 	a = mix(near_color, a, blend);
-	// }
-	// b = imageLoad(in_image_far, scaled_uv_10);
-	// if (cloud_dd_10.b >= 0.5) {
-	// 	blend = clamp(inv_lerp(cloud_dd_10.r, cloud_dd_10.g, native_depth), 0.0, 1.0);
-	// 	near_color = imageLoad(in_image_near, scaled_uv_10);
-	// 	b = mix(near_color, b, blend);
-	// }
-	// c = imageLoad(in_image_far, scaled_uv_01);
-	// if (cloud_dd_01.b >= 0.5) {
-	// 	blend = clamp(inv_lerp(cloud_dd_01.r, cloud_dd_01.g, native_depth), 0.0, 1.0);
-	// 	near_color = imageLoad(in_image_near, scaled_uv_01);
-	// 	c = mix(near_color, c, blend);
-	// }
-	// d = imageLoad(in_image_far, scaled_uv_11);
-	// if (cloud_dd_11.b >= 0.5) {
-	// 	blend = clamp(inv_lerp(cloud_dd_11.r, cloud_dd_11.g, native_depth), 0.0, 1.0);
-	// 	near_color = imageLoad(in_image_near, scaled_uv_11);
-	// 	d = mix(near_color, d, blend);
-	// }
-	if (native_depth * 0.99 > cloud_dd.r) {
+	if (cloud_dd_00.b >= 0.5) {
+		blend = clamp(inv_lerp(cloud_dd_00.r, cloud_dd_00.g, native_depth), 0.0, 1.0);
+		near_color = imageLoad(in_image_near, scaled_uv_00);
+		a = mix(near_color, a, blend);
+	}
+	if (cloud_dd_10.b >= 0.5) {
+		blend = clamp(inv_lerp(cloud_dd_10.r, cloud_dd_10.g, native_depth), 0.0, 1.0);
+		near_color = imageLoad(in_image_near, scaled_uv_10);
+		b = mix(near_color, b, blend);
+	}
+	if (cloud_dd_01.b >= 0.5) {
+		blend = clamp(inv_lerp(cloud_dd_01.r, cloud_dd_01.g, native_depth), 0.0, 1.0);
+		near_color = imageLoad(in_image_near, scaled_uv_01);
+		c = mix(near_color, c, blend);
+	}
+	if (cloud_dd_11.b >= 0.5) {
+		blend = clamp(inv_lerp(cloud_dd_11.r, cloud_dd_11.g, native_depth), 0.0, 1.0);
+		near_color = imageLoad(in_image_near, scaled_uv_11);
+		d = mix(near_color, d, blend);
+	}
 	out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-	if (cloud_dd.b >= 0.5) {
-		float blend = clamp(inv_lerp(cloud_dd.r, cloud_dd.g, native_depth), 0.0, 1.0);
-		a = imageLoad(in_image_near, scaled_uv_00);
-		b = imageLoad(in_image_near, scaled_uv_10);
-		c = imageLoad(in_image_near, scaled_uv_01);
-		d = imageLoad(in_image_near, scaled_uv_11);
-		vec4 near_color = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
-		out_color_image_mix = mix(near_color, out_color_image_mix, blend);
-	}
-	}
-	// out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 
 	imageStore(out_image, uv, out_color_image_mix);
 }

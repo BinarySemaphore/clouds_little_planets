@@ -42,32 +42,16 @@ void main() {
 
 	vec2 ratio = params.size / scene.data.viewport_size;
 	float native_depth = native_depth(uv);
-
-	vec4 cloud_depth_data = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
-	float cloud_depth_near = cloud_depth_data.r;
-	float cloud_depth_far = cloud_depth_data.g;
-	float cloud_sandwich = cloud_depth_data.b;
-
+	
 	ivec2 scaled_uv = ivec2(floor(vec2(uv) * ratio));
 
-	vec4 out_color_image = vec4(0.0);
-
-	// if (cloud_depth < native_depth) {
-		// } else {
-			out_color_image = imageLoad(in_image_far, scaled_uv);
-		// }
-	// }
-	out_color_image = imageLoad(in_image_far, scaled_uv);
-	if (cloud_sandwich >= 0.5) {
-		float blend = clamp(inv_lerp(cloud_depth_near, cloud_depth_far, native_depth), 0.0, 1.0);
+	vec4 out_color_image = imageLoad(in_image_far, scaled_uv);
+	vec4 cloud_dd = imageLoad(in_depth, ivec2(vec2(uv) * ratio));
+	if (cloud_dd.b >= 0.5) {
+		float blend = clamp(inv_lerp(cloud_dd.r, cloud_dd.g, native_depth), 0.0, 1.0);
 		vec4 near_color = imageLoad(in_image_near, scaled_uv);
 		out_color_image = mix(near_color, out_color_image, blend);
 	}
-	// if (cloud_sandwich >= 0.5 && cloud_depth > native_depth * 1.1) {
-	// 	vec4 near = imageLoad(in_image_near, scaled_uv);
-	// 	out_color_image = near;// mix(near, out_color_image, out_color_image.a);
-	// 	out_color_image = vec4(1.0, 0.0, 0.0, 1.0);
-	// }
 
 
 	imageStore(out_image, uv, out_color_image);
