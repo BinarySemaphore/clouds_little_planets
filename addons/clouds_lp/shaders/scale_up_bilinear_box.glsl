@@ -71,21 +71,29 @@ void main() {
 		blend = clamp(inv_lerp(cloud_dd_00.r, cloud_dd_00.g, native_depth), 0.0, 1.0);
 		near_color = imageLoad(in_image_near, scaled_uv_00);
 		a = mix(near_color, a, blend);
+		/* DEBUG: Show blending on depth gradients */
+		// a = vec4(1.0 - blend, blend, 0.0, 1.0);
 	}
 	if (cloud_dd_10.b >= 0.5) {
 		blend = clamp(inv_lerp(cloud_dd_10.r, cloud_dd_10.g, native_depth), 0.0, 1.0);
 		near_color = imageLoad(in_image_near, scaled_uv_10);
 		b = mix(near_color, b, blend);
+		/* DEBUG: Show blending on depth gradients */
+		// b = vec4(1.0 - blend, blend, 0.0, 1.0);
 	}
 	if (cloud_dd_01.b >= 0.5) {
 		blend = clamp(inv_lerp(cloud_dd_01.r, cloud_dd_01.g, native_depth), 0.0, 1.0);
 		near_color = imageLoad(in_image_near, scaled_uv_01);
 		c = mix(near_color, c, blend);
+		/* DEBUG: Show blending on depth gradients */
+		// c = vec4(1.0 - blend, blend, 0.0, 1.0);
 	}
 	if (cloud_dd_11.b >= 0.5) {
 		blend = clamp(inv_lerp(cloud_dd_11.r, cloud_dd_11.g, native_depth), 0.0, 1.0);
 		near_color = imageLoad(in_image_near, scaled_uv_11);
 		d = mix(near_color, d, blend);
+		/* DEBUG: Show blending on depth gradients */
+		// d = vec4(1.0 - blend, blend, 0.0, 1.0);
 	}
 	out_color_image_mix = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 

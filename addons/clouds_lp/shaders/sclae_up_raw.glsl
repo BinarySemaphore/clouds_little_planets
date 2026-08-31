@@ -42,7 +42,7 @@ void main() {
 
 	vec2 ratio = params.size / scene.data.viewport_size;
 	float native_depth = native_depth(uv);
-	
+
 	ivec2 scaled_uv = ivec2(floor(vec2(uv) * ratio));
 
 	vec4 out_color_image = imageLoad(in_image_far, scaled_uv);
@@ -51,6 +51,8 @@ void main() {
 		float blend = clamp(inv_lerp(cloud_dd.r, cloud_dd.g, native_depth), 0.0, 1.0);
 		vec4 near_color = imageLoad(in_image_near, scaled_uv);
 		out_color_image = mix(near_color, out_color_image, blend);
+		/* DEBUG: Show blending on depth gradients */
+		// out_color_image = vec4(1.0 - blend, blend, 0.0, 1.0);
 	}
 
 

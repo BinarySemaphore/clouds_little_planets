@@ -122,12 +122,12 @@ vec4 cloud_march(vec3 start, vec3 dir,
 	}
 
 	for (int i = 0; i < config.data.cl_steps; i++) {
-		if (travel_dist > max_travel_dist_far) break;
-		if (color.a >= 1.0) break;
 		if (travel_dist <= max_travel_dist_near) {
 			color_near = color;
 			near_depth = travel_dist;
 		}
+		if (travel_dist > max_travel_dist_far) break;
+		if (color.a >= 1.0) break;
 
 		pos = start + dir * travel_dist;
 		density = clamp(cloud_density_at_pos(pos) * config.data.cl_density_scalar, 0.0, 1.0);
@@ -226,7 +226,8 @@ void main() {
 	vec3 depth_min_max = depth_planar / dot(dir, cam_forward);
 	float depth_lim_front = depth_min_max.r;
 	float depth_lim_back = depth_min_max.g;
-	float sandwich_edge = 0.0;
+	// Identify depth gradients by comparing near far percent difference
+	float depth_gradient = step(0.01, abs(depth_lim_back - depth_lim_front) / depth_lim_back);
 	float cloud_near_depth = 0.0;
 	float cloud_far_depth = 0.0;
 	vec4 cloud_color_near = vec4(0.0);
@@ -309,8 +310,7 @@ void main() {
 				cloud_color_near);
 			cloud_near_depth += depth_offset;
 			cloud_far_depth += depth_offset;
-			sandwich_edge = step(0.001, abs(max_travel_dist_far - max_travel_dist_near) / max_travel_dist_far);
-			cloud_color_near *= sandwich_edge;
+			cloud_color_near *= depth_gradient;
 		}
 
 		/* DEBUG: Draw hits with travel dist ratio */
@@ -318,7 +318,7 @@ void main() {
 		// cloud_color_far = vec4(vec3(0.0, travel_ratio, travel_ratio), 0.9);
 	}
 
-	imageStore(inout_depth, uv, vec4(cloud_near_depth, cloud_far_depth, sandwich_edge, 1.0));
+	imageStore(inout_depth, uv, vec4(cloud_near_depth, cloud_far_depth, depth_gradient, 1.0));
 	imageStore(out_image_near, uv, cloud_color_near);
 	imageStore(out_image_far, uv, cloud_color_far);
 }
