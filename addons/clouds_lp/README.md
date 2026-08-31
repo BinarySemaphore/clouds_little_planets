@@ -1,4 +1,4 @@
-# Clouds for Little Planets (v1.0)
+# Clouds for Little Planets (v1.1)
 Atmospheric and volumetric cloud compositor for spherical and flat worlds for Godot 4.6 later.
 
 Native Godot editor integration with reusable Resources and organized inspector categories.
@@ -14,6 +14,7 @@ Native Godot editor integration with reusable Resources and organized inspector 
   * [Configuring](#configuring)
   * [Creating and Saving Profiles](#creating-and-saving-profiles)
   * [Script Integration](#script-integration)
+  * [Transparent Objects](#transparent-objects)
   * [Custom Modification](#custom-modification)
 * [Notable Mentions](#notable-mentions)
 
@@ -25,15 +26,16 @@ Native Godot editor integration with reusable Resources and organized inspector 
 - Scalable for large planets, toy planets, and flat worlds
 - Planet and quality Resource profiles
 - Time progression (cloud animation)
+- Depth aware upscaling and compositing
 
 ## Known Issues
 - Embedded objects (like buildings in clouds):
-  - Edges are down scaled
   - Cloud banding in some situations (near walls for dense clouds)
-- Untested: Complex foreground transparency
-- Untested: MSAA
+  - Clear cloud pixel artifacts for near-same depth overlapping edges
 
 ## Install
+Project source code and more here: [https://github.com/BinarySemaphore/clouds_little_planets](https://github.com/BinarySemaphore/clouds_little_planets)
+
 ### Upgrading
 1) Close Godot
 1) Delete directory "*addons/clouds_lp*"
@@ -138,6 +140,12 @@ func _ready() -> void:
    sky_fx.position = global_position
    sky_fx.profile.atmo_s_color_direct = Color.PLUM
 ```
+
+### Transparent Objects
+For __StandardMaterial3D__
+1) Ensure __CloudsLP__'s __Effect Callback Type__ is set to `Post Transparent` (default for __CloudsLP__)
+2) In the __StadardMaterial3D__, set __Transparency__ to `Alpha Scissor` or `Alpha Hash`
+   - `Depth Pre-Pass` can also works, but depend on the look attempting to achieve
 
 ### Custom Modification
 #### Shaders
