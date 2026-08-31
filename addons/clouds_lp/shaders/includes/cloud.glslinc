@@ -192,7 +192,7 @@ vec4 cloud_march(vec3 start, vec3 dir,
 				color_sample.rgb = mix((color_sample.rgb + color_atmo_backlight.rgb) * 0.5, color_sample.rgb, atmo_atten);
 			}
 
-			color.rgb += color_sample.rgb * color_sample.a * (1.0 - color.a);
+			color.rgb = mix(color.rgb, color_sample.rgb, (1.0 - color.a) * color_sample.a);
 			color.a += color_sample.a * (1.0 - color.a);
 		}
 		
